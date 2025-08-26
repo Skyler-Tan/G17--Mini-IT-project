@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request
 import csv
 import os
+import numpy as np
 
 app = Flask(__name__)
 
@@ -49,3 +50,6 @@ def submit():
     # Show results immediately after submit
     results = zip(DEFAULT_GROUP, peer_scores, normalized_scores, final_scores, comments)
     return render_template("results.html", results=results, lecturer_eval=lecturer_eval)
+
+if __name__ == "__main__":
+    app.run(debug=True)
