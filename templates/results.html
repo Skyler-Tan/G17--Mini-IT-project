@@ -1,16 +1,51 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Submission Results</h2>
-<p><strong>Reviewer:</strong> {{ reviewer }}</p>
-<p><strong>Reviewee:</strong> {{ reviewee }}</p>
-<p><strong>Peer Score:</strong> {{ score }}</p>
-<p><strong>Comment:</strong> {{ comment }}</p>
-<p><strong>Lecturer Score:</strong> {{ lecturer_score }}</p>
-<hr>
-<h3>Calculated Results</h3>
-<p><strong>Raw Score:</strong> {{ raw_score }}</p>
-<p><strong>Normalized Score:</strong> {{ normalized_score }}</p>
-<p><strong>Final Score:</strong> {{ final_score }}</p>
+  <h2>Results</h2>
+  <br>
 
-<a href="{{ url_for('index') }}">← Submit Another Review</a>
+  <!-- Form for entering group mark and lecturer evaluation -->
+  <form action="{{ url_for('results') }}" method="POST">
+    <div style="margin-bottom: 20px;">
+      <label>Group Mark: 
+        <input type="number" name="group_mark" value="{{ group_mark }}" min="0" max="100" required>
+      </label>
+      &nbsp;&nbsp;
+      <label>Lecturer Evaluation (1-5): 
+        <input type="number" name="lecturer_eval" value="{{ lecturer_eval }}" min="1" max="5" required>
+      </label>
+      &nbsp;&nbsp;
+      <button type="submit">Calculate Final Marks</button>
+    </div>
+  </form>
+
+  <!-- Results Table -->
+  <table border="1" cellpadding="8" cellspacing="0" style="width:100%; text-align:center;">
+    <tr>
+      <th>Student</th>
+      <th>Avg Peer Score</th>
+      <th>Final Mark</th>
+      <th>Comments</th>
+    </tr>
+    {% for row in rows %}
+    <tr>
+      <td>{{ row[0] }}</td>
+      <td>{{ row[1] }}</td>
+      <td>{{ row[2] }}</td>
+      <td>{{ row[3] }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <br>
+  
+  <!-- Navigation Buttons -->
+  <div>
+    <form action="{{ url_for('form') }}" style="display: inline;">
+      <button type="submit">Edit Reviews</button>
+    </form>
+    &nbsp;
+    <form action="{{ url_for('index') }}" style="display: inline;">
+      <button type="submit">Start Over</button>
+    </form>
+  </div>
 {% endblock %}

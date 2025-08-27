@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Submit Peer Review</h2>
+
+<form action="{{ url_for('submit') }}" method="POST">
+  <!-- Removed the reviewer input field since it's always "Student A" -->
+  
+  <table border="1" cellpadding="8" cellspacing="0" style="width:100%; text-align:center;">
+    <tr>
+      <th>Name</th>
+      <th>Peer Score (1–5)</th>
+      <th>Brief Comment</th>
+    </tr>
+
+    {% set students = ["Student A", "Student B", "Student C", "Student D"] %}
+    {% for s in students %}
+    <tr>
+      <td>{{ s }} <input type="hidden" name="reviewee[]" value="{{ s }}"></td>
+      <td>
+        <select name="score[]" required>
+          <option value="">--Select--</option>
+          {% for i in range(1,6) %}
+          <option value="{{ i }}">{{ i }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td><input type="text" name="comment[]" placeholder="Enter comment"></td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <br>
+  <button type="submit">Submit Reviews</button>
+</form>
+{% endblock %}

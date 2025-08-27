@@ -1,55 +1,100 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for, session
 import csv
 import os
-import numpy as np
 
 app = Flask(__name__)
+app.secret_key = 'your_secret_key_here'  # Needed for session
 
-DATA_FILE = "data/peer_reviews.csv"
-DEFAULT_GROUP = ["STUDENT BAT", "STUDENT BEE", "STUDENT BER", "STUDENT BIR"]
+CSV_FILE = "peer_reviews.csv"
 
-# --- Normalization Function ---
-def normalize_scores(scores):
-    scores = np.array(scores, dtype=float)
-    avg = np.mean(scores)
-    if avg == 0:
-        return [3.0] * len(scores)
-    normalized = scores * (3 / avg)
-    return normalized.round(2).tolist()
-
-@app.route("/")
+@app.route("/", methods=["GET"])
 def index():
-    return render_template("index.html", group=DEFAULT_GROUP)
+    # Clear session when starting over
+    session.clear()
+    return render_template("index.html")
+
+@app.route("/form", methods=["GET"])
+def form():
+    return render_template("form.html")
 
 @app.route("/submit", methods=["POST"])
 def submit():
-    # Collect peer scores
-    peer_scores = [int(request.form.get(f"score_{i}", 0)) for i in range(len(DEFAULT_GROUP))]
-    comments = [request.form.get(f"comment_{i}", "") for i in range(len(DEFAULT_GROUP))]
+    # Overwrite reviewer to always be "Student A"
+    reviewer = "Student A"
     
-    # Lecturer self-eval (for demo: take from form OR default = 4)
-    lecturer_eval = int(request.form.get("lecturer_eval", 4))
+    reviewees = request.form.getlist("reviewee[]")
+    scores = request.form.getlist("score[]")
+    comments = request.form.getlist("comment[]")
 
-    # Normalize peer scores
-    normalized_scores = normalize_scores(peer_scores)
-
-    # Calculate final scores
-    final_scores = [
-        round(0.83 * lecturer_eval + 0.17 * s, 2) for s in normalized_scores
-    ]
-
-    # Save into CSV
-    file_exists = os.path.isfile(DATA_FILE)
-    with open(DATA_FILE, "a", newline="") as f:
+    # Save to CSV (OVERWRITE mode to replace old data)
+    with open(CSV_FILE, "w", newline="") as f:
         writer = csv.writer(f)
-        if not file_exists:
-            writer.writerow(["Name", "Raw Score", "Normalized", "Final Score", "Comment"])
-        for i, name in enumerate(DEFAULT_GROUP):
-            writer.writerow([name, peer_scores[i], normalized_scores[i], final_scores[i], comments[i]])
+        for r, s, c in zip(reviewees, scores, comments):
+            writer.writerow([reviewer, r, s, c])
 
-    # Show results immediately after submit
-    results = zip(DEFAULT_GROUP, peer_scores, normalized_scores, final_scores, comments)
-    return render_template("results.html", results=results, lecturer_eval=lecturer_eval)
+    return redirect(url_for("results"))
+
+@app.route("/results", methods=["GET", "POST"])
+def results():
+    # Store group mark and lecturer eval in SESSION (not CSV)
+    if request.method == "POST":
+        try:
+            session['group_mark'] = float(request.form.get("group_mark", 0))
+            session['lecturer_eval'] = float(request.form.get("lecturer_eval", 0))
+        except (ValueError, TypeError):
+            session['group_mark'] = 0
+            session['lecturer_eval'] = 0
+
+    # Use session values or defaults
+    group_mark = session.get('group_mark', 0)
+    lecturer_eval = session.get('lecturer_eval', 0)
+
+    # Read peer review data from CSV
+    rows = []
+    if os.path.exists(CSV_FILE):
+        with open(CSV_FILE, newline="") as f:
+            reader = csv.reader(f)
+            rows = list(reader)
+
+    # Group data by student
+    students = {}
+    for row in rows:
+        if len(row) >= 4:
+            reviewer, reviewee, score, comment = row
+            try:
+                score = int(score)
+                if reviewee not in students:
+                    students[reviewee] = {"scores": [], "comments": []}
+                students[reviewee]["scores"].append(score)
+                students[reviewee]["comments"].append(f"{reviewer}: {comment}")
+            except ValueError:
+                continue
+
+    results_data = []
+    for student, data in students.items():
+        # Calculate average peer score
+        if data["scores"]:
+            avg_peer = sum(data["scores"]) / len(data["scores"])
+        else:
+            avg_peer = 0
+
+        # Calculate final score using session values
+        peer_contribution = group_mark * 0.25 * (avg_peer / 5)
+        lecturer_contribution = group_mark * 0.25 * (lecturer_eval / 5)
+        base_group_mark = group_mark * 0.5
+        final_score = base_group_mark + peer_contribution + lecturer_contribution
+
+        results_data.append([
+            student,
+            round(avg_peer, 2),
+            round(final_score, 2),
+            "; ".join(data["comments"])
+        ])
+
+    return render_template("results.html",
+                           rows=results_data,
+                           group_mark=group_mark,
+                           lecturer_eval=lecturer_eval)
 
 if __name__ == "__main__":
     app.run(debug=True)
