@@ -3,13 +3,12 @@ import csv
 import os
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'  # Needed for session
+app.secret_key = 'your_secret_key_here' 
 
 CSV_FILE = "peer_reviews.csv"
 
 @app.route("/", methods=["GET"])
 def index():
-    # Clear session when starting over
     session.clear()
     return render_template("index.html")
 
@@ -19,14 +18,12 @@ def form():
 
 @app.route("/submit", methods=["POST"])
 def submit():
-    # Overwrite reviewer to always be "Student A"
     reviewer = "Student A"
     
     reviewees = request.form.getlist("reviewee[]")
     scores = request.form.getlist("score[]")
     comments = request.form.getlist("comment[]")
 
-    # Save to CSV (OVERWRITE mode to replace old data)
     with open(CSV_FILE, "w", newline="") as f:
         writer = csv.writer(f)
         for r, s, c in zip(reviewees, scores, comments):
@@ -36,7 +33,7 @@ def submit():
 
 @app.route("/results", methods=["GET", "POST"])
 def results():
-    # Store group mark and lecturer eval in SESSION (not CSV)
+
     if request.method == "POST":
         try:
             session['group_mark'] = float(request.form.get("group_mark", 0))
@@ -45,18 +42,15 @@ def results():
             session['group_mark'] = 0
             session['lecturer_eval'] = 0
 
-    # Use session values or defaults
     group_mark = session.get('group_mark', 0)
     lecturer_eval = session.get('lecturer_eval', 0)
 
-    # Read peer review data from CSV
     rows = []
     if os.path.exists(CSV_FILE):
         with open(CSV_FILE, newline="") as f:
             reader = csv.reader(f)
             rows = list(reader)
 
-    # Group data by student
     students = {}
     for row in rows:
         if len(row) >= 4:
@@ -72,13 +66,11 @@ def results():
 
     results_data = []
     for student, data in students.items():
-        # Calculate average peer score
         if data["scores"]:
             avg_peer = sum(data["scores"]) / len(data["scores"])
         else:
             avg_peer = 0
 
-        # Calculate final score using session values
         peer_contribution = group_mark * 0.25 * (avg_peer / 5)
         lecturer_contribution = group_mark * 0.25 * (lecturer_eval / 5)
         base_group_mark = group_mark * 0.5
