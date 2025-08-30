@@ -1,26 +1,34 @@
 <!DOCTYPE html>
-<html lang="en"></html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename=styles.css) }}">
-    <title>Login</title>
+    <title>Peer Review Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
-
 <body>
-    <div class="container"> 
-        <h2 class="word">Login</h2>
+    <div class="login-container">
+        <h2>Peer Review App - Login</h2>
 
-        <form action="{{ url_for('login') }}" method="POST"></form>
-            <div>{{ msg }}</div>
-            
-            <input class="textbox" type="text" name="username" placeholder="Enter Username" required>
-            <input class="textbox" type="text" name="password" placeholder="Enter Password" required>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <p class="flash {{ category }}">{{ message }}</p>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
 
-            <button class="button" type="submit" >Login</button>
+        <form method="POST">
+            <input type="text" name="username" placeholder="Username" required><br>
+            <input type="password" name="password" placeholder="Password" required><br>
+            <button type="submit">Login</button>
         </form>
+        
+        <select name="role">
+          <option value="student">Student</option>
+          <option value="lecturer">Lecturer</option>
+        </select>
 
-        <p class="bottom">Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p> 
+        <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
     </div>
 </body>
 </html>

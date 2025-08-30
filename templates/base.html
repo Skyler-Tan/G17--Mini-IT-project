@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>{{ title if title else "Peer Review App" }}</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    </head>
+    <body>
+        <header>
+            <nav>
+                <img src="{{ url_for('static', filename='uni_logo.png') }}" alt="Uni Logo" class="Logo">
+                <ul>
+                    <li><a href ="{{ url_for('student_dashboard') }}">Dashboard</a></li>
+                    <li><a href ="{{ url_for('logout') }}">Logout</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            { % block content %}{% end block %}
+        </main>
+
+        <footer>
+            <p>Alt + 9426{{ 2025 }}{{ Multimedia University }} | Peer Review System </p>
+        </footer>
+    </body>
+</html>
