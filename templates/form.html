@@ -2,9 +2,7 @@
 {% block content %}
 <h2>Submit Peer Review</h2>
 
-<form action="{{ url_for('submit') }}" method="POST">
-  <!-- Removed the reviewer input field since it's always "Student A" -->
-  
+<form action="{{ url_for('self_assessment') }}" method="POST">
   <table border="1" cellpadding="8" cellspacing="0" style="width:100%; text-align:center;">
     <tr>
       <th>Name</th>
@@ -30,6 +28,7 @@
   </table>
 
   <br>
-  <button type="submit">Submit Reviews</button>
+  <!-- Next button leads to self-assessment -->
+  <button type="submit">Next</button>
 </form>
 {% endblock %}

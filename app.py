@@ -3,7 +3,7 @@ import csv
 import os
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here' 
+app.secret_key = 'your_secret_key_here'
 
 CSV_FILE = "peer_reviews.csv"
 
@@ -16,14 +16,21 @@ def index():
 def form():
     return render_template("form.html")
 
+@app.route("/self_assessment", methods=["GET", "POST"])
+def self_assessment():
+    if request.method == "POST":
+        return render_template("self_assessment.html")
+    return render_template("self_assessment.html")
+
 @app.route("/submit", methods=["POST"])
 def submit():
-    reviewer = "Student A"
+    reviewer = "Student A"  # Replace with session user later if needed
     
     reviewees = request.form.getlist("reviewee[]")
     scores = request.form.getlist("score[]")
     comments = request.form.getlist("comment[]")
 
+    # Overwrite CSV file each time
     with open(CSV_FILE, "w", newline="") as f:
         writer = csv.writer(f)
         for r, s, c in zip(reviewees, scores, comments):
@@ -31,9 +38,16 @@ def submit():
 
     return redirect(url_for("results"))
 
+@app.route("/finish", methods=["POST"])
+def finish():
+    return redirect(url_for("done"))
+
+@app.route("/done")
+def done():
+    return render_template("done.html")
+
 @app.route("/results", methods=["GET", "POST"])
 def results():
-
     if request.method == "POST":
         try:
             session['group_mark'] = float(request.form.get("group_mark", 0))
@@ -49,7 +63,7 @@ def results():
     if os.path.exists(CSV_FILE):
         with open(CSV_FILE, newline="") as f:
             reader = csv.reader(f)
-            rows = list(reader)
+            rows = list(reader)  # don’t skip the first row
 
     students = {}
     for row in rows:
@@ -66,14 +80,11 @@ def results():
 
     results_data = []
     for student, data in students.items():
-        if data["scores"]:
-            avg_peer = sum(data["scores"]) / len(data["scores"])
-        else:
-            avg_peer = 0
+        avg_peer = sum(data["scores"]) / len(data["scores"]) if data["scores"] else 0
 
+        base_group_mark = group_mark * 0.5
         peer_contribution = group_mark * 0.25 * (avg_peer / 5)
         lecturer_contribution = group_mark * 0.25 * (lecturer_eval / 5)
-        base_group_mark = group_mark * 0.5
         final_score = base_group_mark + peer_contribution + lecturer_contribution
 
         results_data.append([
