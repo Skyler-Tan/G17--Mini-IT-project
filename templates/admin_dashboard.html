@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Welcome, Admin!</h1>
+
+<p>This is your admin dashboard.</p>
+
+<a href="{{ url_for('change_password')}}">Change Password</a>
+<a href="{{ url_for('logout')}}">Logout</a>
+{% endblock %}

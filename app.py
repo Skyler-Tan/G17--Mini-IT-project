@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask import abort
 from flask_login import current_user 
+from datetime import datetime
 
 
 
@@ -16,13 +17,17 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
+@app.route("/")
+def home():
+    return render_template("login.html", title="Login Page", current_year=datetime.now().year)
+
 
 #Database
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)  # hashed password
-    role = db.Column(db.String(20), nullable=False, default='student')  # student/admin role
+    role = db.Column(db.String(20), nullable=False, default='student')  # student/lecturer/admin role
 
 
 @login_manager.user_loader
@@ -48,9 +53,32 @@ def role_required(role):
 
 
 #Route to webpages
-@app.route('/')
-def home():
-    return redirect(url_for('login'))
+
+@app.route('/change_password', methods=["GET", "POST"])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        old_password = request.form['old_password']
+        new_password = request.form['new_password']
+        confirm_password = request.form['confirm_password']
+
+        if not check_password_hash(current_user.password, old_password):
+            flash("Old password is incorrect.", "danger")
+            return redirect(url_for('change_password'))
+        
+        if new_password != confirm_password:
+            flash("New passwords do not match.", "danger")
+            return redirect(url_for('change password'))
+        
+        current_user.password = generate_password_hash(new_password)
+        db.session.commit()
+
+        flash("Password updated successfully!", "success")
+        return redirect(url_for('dashboard'))
+    
+    return render_template('change_password.html')
+                            
+                        
 
 
 
@@ -59,7 +87,7 @@ def register():
     if request.method == 'POST':
         username = request.form.get("username")
         password = request.form.get("password") 
-        role = request.form.get('role', 'student')  # fallback to student
+        role = request.form.get('role', 'student') 
 
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
@@ -101,20 +129,15 @@ def login():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template("dashboard.html")
-
-@app.route('/admin')
-@login_required
-@role_required('admin')
-def admin_dashboard():
-    return "Welcome Admin"
-
-@app.route('/student')
-@login_required
-@role_required('student')
-def student_dashboard():
-    return "Welcome Student!"
-
+    if current_user.role == "student":
+        return render_template('student_dashboard.html')
+    elif current_user.role == "lecturer":
+        return render_template('lecturer_dashboard.html')
+    elif current_user.role == "admin":
+        return render_template('admin_dashboard.html')
+    else:
+        flash("Role is not recognized", "danger")
+        return redirect(url_for("logout"))
 
 
 @app.route('/logout')
