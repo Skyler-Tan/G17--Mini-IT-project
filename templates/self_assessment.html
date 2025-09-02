@@ -1,35 +1,43 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Self Assessment</h2>
+<center><h2>Self Assessment</h2></center>
 
-<form action="{{ url_for('finish') }}" method="POST">
-  <!-- Pass forward the peer review data -->
-  {% for r in request.form.getlist("reviewee[]") %}
-    <input type="hidden" name="reviewee[]" value="{{ r }}">
-  {% endfor %}
-  {% for s in request.form.getlist("score[]") %}
-    <input type="hidden" name="score[]" value="{{ s }}">
-  {% endfor %}
-  {% for c in request.form.getlist("comment[]") %}
-    <input type="hidden" name="comment[]" value="{{ c }}">
-  {% endfor %}
+<br>
+<form action="{{ url_for('finish') }}" method="POST" 
+      style="display:flex; justify-content:center; align-items:center; height:80vh;">
 
-  <!-- Self-assessment questions -->
-  <label>Write a brief summary:</label><br>
-  <textarea name="summary" rows="3" required></textarea><br><br>
+  <div style="width: 60%; max-width: 700px; text-align:left;">
+    <!-- Pass forward the peer review data -->
+    {% for r in request.form.getlist("reviewee[]") %}
+      <input type="hidden" name="reviewee[]" value="{{ r }}">
+    {% endfor %}
+    {% for s in request.form.getlist("score[]") %}
+      <input type="hidden" name="score[]" value="{{ s }}">
+    {% endfor %}
+    {% for c in request.form.getlist("comment[]") %}
+      <input type="hidden" name="comment[]" value="{{ c }}">
+    {% endfor %}
 
-  <label>What challenges did you face and what have you learned?</label><br>
-  <textarea name="challenges" rows="3" required></textarea><br><br>
+    <!-- Self-assessment questions -->
+    <label>Write a brief summary:</label><br>
+    <textarea name="summary" rows="4" style="width:100%; resize:none;" required></textarea><br><br>
 
-  <label>What would you do differently?</label><br>
-  <textarea name="different" rows="3" required></textarea><br><br>
+    <label>What challenges did you face and what have you learned?</label><br>
+    <textarea name="challenges" rows="4" style="width:100%; resize:none;" required></textarea><br><br>
 
-  <label>Your role in the group and how it helped:</label><br>
-  <textarea name="role" rows="3" required></textarea><br><br>
+    <label>What would you do differently?</label><br>
+    <textarea name="different" rows="4" style="width:100%; resize:none;" required></textarea><br><br>
 
-  <label>Feedback / Other Comments:</label><br>
-  <textarea name="feedback" rows="3"></textarea><br><br>
+    <label>Your role in the group and how it helped:</label><br>
+    <textarea name="role" rows="4" style="width:100%; resize:none;" required></textarea><br><br>
 
-  <button type="submit">Submit</button>
+    <label>Feedback / Other Comments:</label><br>
+    <textarea name="feedback" rows="4" style="width:100%; resize:none;"></textarea><br><br>
+
+    <div style="text-align:center;">
+      <button type="submit" style="padding:10px 20px; font-size:16px;">Submit</button>
+    </div>
+  </div>
 </form>
+
 {% endblock %}
