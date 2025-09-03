@@ -3,7 +3,26 @@
 <div style="display: flex; justify-content: center; align-items: center; height: 70vh; text-align: center;">
   <div>
     <h2>You have finished your review 🎉</h2>
-    <p><a href="{{ url_for('results') }}">Click here to view results</a></p>
+    
+    <!-- Optional: Show what was completed -->
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 20px 0; font-size: 14px; color: #666;">
+      <strong>Completed:</strong><br>
+      ✅ Peer Reviews<br>
+      ✅ Self Assessment
+    </div>
+    
+    <p>
+      <a class="btn btn-primary" href="{{ url_for('results') }}" 
+         style="padding: 12px 25px; text-decoration: none;">
+        Click here to view results
+      </a>
+    </p>
+    
+    <p style="margin-top: 15px;">
+      <a href="{{ url_for('index') }}" style="color: #666; text-decoration: none; font-size: 14px;">
+        Start a new review
+      </a>
+    </p>
   </div>
 </div>
 {% endblock %}

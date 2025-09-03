@@ -1,34 +1,52 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Submit Peer Review</h2>
+<div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+    <h2>Submit Peer Review</h2>
+    <p style="color: #666; margin-bottom: 20px;">Rate your teammates on a scale of 1-5 and provide feedback</p>
 
-<form action="{{ url_for('self_assessment') }}" method="POST">
-  <table border="1" cellpadding="8" cellspacing="0" style="width:100%; text-align:center;">
-    <tr>
-      <th>Name</th>
-      <th>Peer Score (1–5)</th>
-      <th>Brief Comment</th>
-    </tr>
+    <form action="{{ url_for('self_assessment') }}" method="POST">
+        <table border="1" cellpadding="12" cellspacing="0" style="width:100%; text-align:center; border-collapse: collapse;">
+            <tr style="background-color: #f8f9fa;">
+                <th>Team Member</th>
+                <th>Score (1–5)</th>
+                <th>Comments</th>
+            </tr>
 
-    {% set students = ["Student A", "Student B", "Student C", "Student D"] %}
-    {% for s in students %}
-    <tr>
-      <td>{{ s }} <input type="hidden" name="reviewee[]" value="{{ s }}"></td>
-      <td>
-        <select name="score[]" required>
-          <option value="">--Select--</option>
-          {% for i in range(1,6) %}
-          <option value="{{ i }}">{{ i }}</option>
-          {% endfor %}
-        </select>
-      </td>
-      <td><input type="text" name="comment[]" placeholder="Enter comment"></td>
-    </tr>
-    {% endfor %}
-  </table>
+            {% set students = ["Student A", "Student B", "Student C", "Student D"] %}
+            {% set current_user = "Student A" %}
+            
+            {% for s in students %}
+                {% if s != current_user %}
+                <tr>
+                    <td><strong>{{ s }}</strong>
+                        <input type="hidden" name="reviewee[]" value="{{ s }}">
+                    </td>
+                    <td>
+                        <select name="score[]" required style="padding: 5px; width: 120px;">
+                            <option value="">Select</option>
+                            <option value="5">5 - Excellent</option>
+                            <option value="4">4 - Very Good</option>
+                            <option value="3">3 - Good</option>
+                            <option value="2">2 - Fair</option>
+                            <option value="1">1 - Poor</option>
+                        </select>
+                    </td>
+                    <td>
+                        <textarea name="comment[]" 
+                                style="width: 90%; padding: 8px; min-height: 60px;" 
+                                placeholder="Provide constructive feedback..."></textarea>
+                    </td>
+                </tr>
+                {% endif %}
+            {% endfor %}
+        </table>
 
-  <br>
-  <!-- Next button leads to self-assessment -->
-  <button type="submit">Next</button>
-</form>
+        <br>
+        <div style="text-align: center;">
+            <button type="submit" style="padding: 12px 25px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
+                Next: Self-Assessment
+            </button>
+        </div>
+    </form>
+</div>
 {% endblock %}

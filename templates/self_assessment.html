@@ -1,43 +1,69 @@
 {% extends "base.html" %}
 {% block content %}
-<center><h2>Self Assessment</h2></center>
+<div class="container" style="max-width: 800px; margin: 0 auto; padding: 20px;">
+    <center><h2>Self Assessment</h2></center>
+    <p style="text-align: center; color: #666; margin-bottom: 30px;">
+        Please reflect on your group work experience
+    </p>
+    
+    <form action="{{ url_for('finish') }}" method="POST">
+        <!-- Pass forward the peer review data -->
+        {% if reviewees %}
+            {% for r in reviewees %}
+                <input type="hidden" name="reviewee[]" value="{{ r }}">
+            {% endfor %}
+            {% for s in scores %}
+                <input type="hidden" name="score[]" value="{{ s }}">
+            {% endfor %}
+            {% for c in comments %}
+                <input type="hidden" name="comment[]" value="{{ c }}">
+            {% endfor %}
+        {% endif %}
 
-<br>
-<form action="{{ url_for('finish') }}" method="POST" 
-      style="display:flex; justify-content:center; align-items:center; height:80vh;">
+        <div class="form-group">
+            <label><strong>1. Write a brief summary of your contribution to the project:</strong></label>
+            <textarea name="summary" rows="4" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-family:inherit;" required placeholder="Describe what you contributed to the group project..."></textarea>
+        </div>
 
-  <div style="width: 60%; max-width: 700px; text-align:left;">
-    <!-- Pass forward the peer review data -->
-    {% for r in request.form.getlist("reviewee[]") %}
-      <input type="hidden" name="reviewee[]" value="{{ r }}">
-    {% endfor %}
-    {% for s in request.form.getlist("score[]") %}
-      <input type="hidden" name="score[]" value="{{ s }}">
-    {% endfor %}
-    {% for c in request.form.getlist("comment[]") %}
-      <input type="hidden" name="comment[]" value="{{ c }}">
-    {% endfor %}
+        <div class="form-group">
+            <label><strong>2. What challenges did you face and what have you learned?</strong></label>
+            <textarea name="challenges" rows="4" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-family:inherit;" required placeholder="Describe the challenges you encountered and lessons learned..."></textarea>
+        </div>
 
-    <!-- Self-assessment questions -->
-    <label>Write a brief summary:</label><br>
-    <textarea name="summary" rows="4" style="width:100%; resize:none;" required></textarea><br><br>
+        <div class="form-group">
+            <label><strong>3. What would you do differently if you could start over?</strong></label>
+            <textarea name="different" rows="4" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-family:inherit;" required placeholder="Reflect on what you would change or improve..."></textarea>
+        </div>
 
-    <label>What challenges did you face and what have you learned?</label><br>
-    <textarea name="challenges" rows="4" style="width:100%; resize:none;" required></textarea><br><br>
+        <div class="form-group">
+            <label><strong>4. Describe your role in the group and how it helped the team:</strong></label>
+            <textarea name="role" rows="4" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-family:inherit;" required placeholder="What was your primary role and how did it benefit the group..."></textarea>
+        </div>
 
-    <label>What would you do differently?</label><br>
-    <textarea name="different" rows="4" style="width:100%; resize:none;" required></textarea><br><br>
+        <div class="form-group">
+            <label><strong>5. Additional feedback or comments (optional):</strong></label>
+            <textarea name="feedback" rows="4" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-family:inherit;" placeholder="Any other thoughts or feedback..."></textarea>
+        </div>
 
-    <label>Your role in the group and how it helped:</label><br>
-    <textarea name="role" rows="4" style="width:100%; resize:none;" required></textarea><br><br>
+        <div style="text-align:center; margin-top: 30px;">
+            <button type="submit" style="padding:12px 30px; font-size:16px; background-color:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">
+                Complete Assessment
+            </button>
+        </div>
+    </form>
+</div>
 
-    <label>Feedback / Other Comments:</label><br>
-    <textarea name="feedback" rows="4" style="width:100%; resize:none;"></textarea><br><br>
-
-    <div style="text-align:center;">
-      <button type="submit" style="padding:10px 20px; font-size:16px;">Submit</button>
-    </div>
-  </div>
-</form>
-
+<style>
+.form-group {
+    margin-bottom: 25px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #333;
+}
+button:hover {
+    background-color: #0056b3;
+}
+</style>
 {% endblock %}
