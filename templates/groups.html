@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>Groups — Class: {{ cls.name }}</h2>
+
+<form method="post" class="card">
+  <label>New Group</label>
+  <input name="name" placeholder="e.g. Group A" required>
+  <button type="submit">Create Group</button>
+</form>
+
+<table>
+  <thead><tr><th>ID</th><th>Name</th><th>Students</th><th>Actions</th></tr></thead>
+  <tbody>
+    {% for g in groups %}
+      <tr>
+        <td>{{ g.id }}</td>
+        <td>{{ g.name }}</td>
+        <td>{{ g.students|length }}</td>
+        <td>
+          <form method="post" action="{{ url_for('delete_group', group_id=g.id) }}" onsubmit="return confirm('Delete group?');">
+            <button type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<p><a href="{{ url_for('list_classes') }}">← Back to classes</a></p>
+{% endblock %}
