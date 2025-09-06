@@ -4,7 +4,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 body {
@@ -12,49 +12,40 @@ body {
   min-height: 100vh;
 }
 
-/* Top navigation bar */
+/* Topbar */
 .topbar {
-  width: 100%;
-  background: #003366;
-  color: #fff;
-  padding: 10px 30px;
+  background-color: #4169e1; 
+  color: white;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+  padding: 50px 100px;
 }
 
-.logo-area {
+.topbar .logo-area {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 30px;
 }
 
-.logo-area img {
-  width: 50px;
-  height: auto;
+.topbar img {
+  height: 60px;
 }
 
-.logo-area h2 {
-  font-size: 20px;
-  font-weight: bold;
+.topbar h2 {
+  font-size: 100px;
+  margin: 0;
 }
 
-.nav-links a {
-  color: #fff;
+.topbar-links a {
+  color: white;
   text-decoration: none;
   margin-left: 20px;
-  font-size: 15px;
-  transition: color 0.3s;
-}
-
-.nav-links a:hover {
-  color: #ffcccc;
-}
-
-.logout {
   font-weight: bold;
-  color: #ffdede;
+}
+
+.topbar-links a:hover {
+  text-decoration: underline;
 }
 
 /* Main content */
@@ -75,7 +66,7 @@ body {
 }
 
 .card {
-  background: #fff;
+  background: #dfdcdc;
   padding: 1.5rem;
   border-radius: 10px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -118,7 +109,6 @@ html, body {
   flex-direction: column;
 }
 
-/* Main content grows to fill space */
 .dashboard-main {
   flex: 1;  /* pushes footer down */
   padding: 30px;

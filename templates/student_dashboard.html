@@ -1,18 +1,21 @@
-{% block content %}
-<header class="topbar">
-  <div class="logo-area">
-    <img src="{{ url_for('static', filename='uni_logo-removebg-preview.png') }}" alt="University Logo">
-    <h2>Peer Review App</h2>
-  </div>
-</header>
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Peer Review App{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
 {% endblock %}
 
+{% block content %}
+<header class="topbar">
+  <div class="logo-area">
+    <img src="{{ url_for('static', filename='uni_logo-removebg-preview.png') }}" alt="University Logo">
+  </div>
+</header>
 
-<div class="dashboard-main">
-  <h1>Welcome, {{ user.first_name }}</h1>
+<main class="dashboard-main">
+  <h1>Peer Review App</h1>
+  <h2>Welcome, {{ user.first_name }}!</h2>
 
   <section class="cards">
     <div class="card">
@@ -31,12 +34,5 @@
       <button onclick="window.location.href='{{ url_for('logout') }}'">Logout</button>
     </div>
   </section>
-</div>
-
-{% endblock %}
-
-{% block footer %}
-<footer class="footer">
-  <p>&copy; {{ current_year }} Multimedia University. All Rights Reserved.</p>
-</footer>
+</main>
 {% endblock %}
