@@ -158,6 +158,11 @@ def logout():
     flash("You have been logged out.", "info")
     return redirect(url_for("login"))
 
+@app.route('/profile')
+@login_required
+def profile():
+    return render_template('profile.html', student_id=current_user.student_id, first_name=current_user.first_name, last_name=current_user.first_name, username=current_user.username, email=current_user.email, role=current_user.role)
+
 
 if __name__ == "__main__":
     with app.app_context():
