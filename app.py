@@ -6,6 +6,8 @@ from functools import wraps
 from flask import abort
 from flask_login import current_user 
 from datetime import datetime
+from flask_migrate import Migrate
+from sqlalchemy import or_
 
 
 
@@ -14,6 +16,7 @@ app.config['SECRET_KEY'] = 'yoursecretkey'   # change this
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
@@ -25,6 +28,10 @@ def home():
 #Database
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.String(20), nullable=False, unique=True)
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)  # hashed password
     role = db.Column(db.String(20), nullable=False, default='student')  # student/lecturer/admin role
@@ -85,17 +92,21 @@ def change_password():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
+        student_id = request.form.get("student_id")
+        first_name = request.form.get("first_name")
+        last_name = request.form.get("last_name")
         username = request.form.get("username")
+        email = request.form.get("email")
         password = request.form.get("password") 
         role = request.form.get('role', 'student') 
 
-        existing_user = User.query.filter_by(username=username).first()
+        existing_user = User.query.filter(or_(User.username == username, User.email == email, User.student_id == student_id)).first()
         if existing_user:
-            flash("Username already exists. Please choose another.", "warning")
+            flash("Username, Email or Student ID already exists. Please try again.", "warning")
             return redirect(url_for('register'))
 
         hashed_pw = generate_password_hash(password, method='pbkdf2:sha256')
-        new_user = User(username=username, password=hashed_pw, role=role)
+        new_user = User(student_id = student_id, first_name = first_name, last_name = last_name, username=username, email=email, password=hashed_pw, role=role)
         
         db.session.add(new_user)
         db.session.commit()
@@ -130,11 +141,11 @@ def login():
 @login_required
 def dashboard():
     if current_user.role == "student":
-        return render_template('student_dashboard.html')
+        return render_template('student_dashboard.html', user=current_user)
     elif current_user.role == "lecturer":
-        return render_template('lecturer_dashboard.html')
+        return render_template('lecturer_dashboard.html', user=current_user)
     elif current_user.role == "admin":
-        return render_template('admin_dashboard.html')
+        return render_template('admin_dashboard.html', user=current_user)
     else:
         flash("Role is not recognized", "danger")
         return redirect(url_for("logout"))
