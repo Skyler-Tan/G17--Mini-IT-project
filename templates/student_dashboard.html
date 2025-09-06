@@ -1,38 +1,29 @@
-{% extends "base.html" %}
-
-{% block title %}Dashboard - Peer Review App{% endblock %}
+{% block content %}
+<header class="topbar">
+  <div class="logo-area">
+    <img src="{{ url_for('static', filename='uni_logo-removebg-preview.png') }}" alt="University Logo">
+    <h2>Peer Review App</h2>
+  </div>
+</header>
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
 {% endblock %}
 
-{% block content %}
-<div class="sidebar">
-  <div class="logo-area">
-    <img src="{{ url_for('static', filename='uni_logo-removebg-preview.png') }}" alt="University Logo">
-    <h2>Dashboard</h2>
-  </div>
-  <ul>
-    <li><a href="#">👤 Profile</a></li>
-    <li><a href="#">🔒 Change Password</a></li>
-    <li><a href="{{ url_for('logout') }}" class="logout">🚪 Logout</a></li>
-  </ul>
-</div>
 
-<div class="main-content">
-  <header>
-    <h1>Welcome, {{ user.first_name }}</h1>
-  </header>
+<div class="dashboard-main">
+  <h1>Welcome, {{ user.first_name }}</h1>
+
   <section class="cards">
     <div class="card">
       <h3>Profile</h3>
       <p>View and edit your personal details.</p>
-      <button>Open</button>
+      <button onclick="window.location.href='{{ url_for('profile') }}'">Open</button>
     </div>
     <div class="card">
       <h3>Change Password</h3>
       <p>Update your account password securely.</p>
-      <button>Change</button>
+      <button onclick="window.location.href='{{ url_for('change_password') }}'">Change</button>
     </div>
     <div class="card">
       <h3>Logout</h3>
@@ -41,4 +32,11 @@
     </div>
   </section>
 </div>
+
+{% endblock %}
+
+{% block footer %}
+<footer class="footer">
+  <p>&copy; {{ current_year }} Multimedia University. All Rights Reserved.</p>
+</footer>
 {% endblock %}

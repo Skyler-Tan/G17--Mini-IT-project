@@ -1,10 +1,42 @@
-{% extends "base.html" %}
-
 {% block content %}
-<h1>Welcome, {{ user.first_name }}!</h1>
+<header class="topbar">
+  <div class="logo-area">
+    <img src="{{ url_for('static', filename='uni_logo-removebg-preview.png') }}" alt="University Logo">
+    <h2>Peer Review App</h2>
+  </div>
+</header>
 
-<p>This is your lecturer dashboard.</p>
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+{% endblock %}
 
-<a href="{{ url_for('change_password')}}">Change Password</a>
-<a href="{{ url_for('logout')}}">Logout</a>
+
+<div class="dashboard-main">
+  <h1>Welcome, {{ user.first_name }}</h1>
+
+  <section class="cards">
+    <div class="card">
+      <h3>Profile</h3>
+      <p>View and edit your personal details.</p>
+      <button onclick="window.location.href='{{ url_for('profile') }}'">Open</button>
+    </div>
+    <div class="card">
+      <h3>Change Password</h3>
+      <p>Update your account password securely.</p>
+      <button onclick="window.location.href='{{ url_for('change_password') }}'">Change</button>
+    </div>
+    <div class="card">
+      <h3>Logout</h3>
+      <p>Sign out of your account safely.</p>
+      <button onclick="window.location.href='{{ url_for('logout') }}'">Logout</button>
+    </div>
+  </section>
+</div>
+
+{% endblock %}
+
+{% block footer %}
+<footer class="footer">
+  <p>&copy; {{ current_year }} Multimedia University. All Rights Reserved.</p>
+</footer>
 {% endblock %}

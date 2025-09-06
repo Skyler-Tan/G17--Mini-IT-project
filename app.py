@@ -9,8 +9,6 @@ from datetime import datetime
 from flask_migrate import Migrate
 from sqlalchemy import or_
 
-
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yoursecretkey'   # change this
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
@@ -23,6 +21,10 @@ login_manager.login_view = 'login'
 @app.route("/")
 def home():
     return render_template("login.html", title="Login Page", current_year=datetime.now().year)
+
+@app.context_processor
+def inject_current_year():
+    return {"current_year": datetime.now().year}
 
 
 #Database
@@ -141,11 +143,11 @@ def login():
 @login_required
 def dashboard():
     if current_user.role == "student":
-        return render_template('student_dashboard.html', user=current_user)
+        return render_template('student_dashboard.html', user=current_user, current_year=datetime.now().year)
     elif current_user.role == "lecturer":
-        return render_template('lecturer_dashboard.html', user=current_user)
+        return render_template('lecturer_dashboard.html', user=current_user, current_year=datetime.now().year)
     elif current_user.role == "admin":
-        return render_template('admin_dashboard.html', user=current_user)
+        return render_template('admin_dashboard.html', user=current_user, current_year=datetime.now().year)
     else:
         flash("Role is not recognized", "danger")
         return redirect(url_for("logout"))

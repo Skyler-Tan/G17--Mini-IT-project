@@ -1,21 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>{{ title if title else "Student Peer Review App" }}</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-        
-        {% block extra_css %}{% endblock %}
-    </head>
-    <body>
-        
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title if title else "Student Peer Review App" }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
 
-        <main>
-            {% block content %}{% endblock %}
-        </main>
-
-        <footer>
-            <p>  © {{ current_year }} Multimedia University | Peer Review System</p>
-        </footer>
-    </body>
+    {% block footer %}
+    <footer class="footer">
+        <p>&copy; {{ current_year }} Multimedia University. All Rights Reserved.</p>
+        <p>
+            <a href="#">Privacy Policy</a> | 
+            <a href="#">Terms of Service</a> | 
+            <a href="#">Contact</a>
+        </p>
+    </footer>
+    {% endblock %}
+</body>
 </html>
