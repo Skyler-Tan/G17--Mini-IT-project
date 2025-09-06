@@ -163,16 +163,15 @@ def logout():
 @app.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
-    user = current_user  # or however you store the logged-in user
-    
     if request.method == "POST":
-        user.username = request.form["username"]
-        user.email = request.form["email"]
+        current_user.username = request.form["username"]
+        current_user.email = request.form["email"]
+
         db.session.commit()
         flash("Profile updated successfully!", "success")
         return redirect(url_for("profile"))
 
-    return render_template("profile.html", user=user)
+    return render_template("profile.html", user=current_user)
 
 
 if __name__ == "__main__":

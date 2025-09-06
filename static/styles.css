@@ -1,5 +1,5 @@
 .footer {
-  background: #003366;
+  background: #4169e1;
   color: #fff;
   text-align: center;
   padding: 15px 20px;
@@ -16,4 +16,8 @@
 
 .footer a:hover {
   color: #fff;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
 }

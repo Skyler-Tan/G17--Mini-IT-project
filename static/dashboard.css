@@ -24,17 +24,12 @@ body {
 
 .topbar .logo-area {
   display: flex;
-  align-items: center;
-  gap: 30px;
+  align-items:flex-start;
+  gap: 10px;
 }
 
 .topbar img {
-  height: 60px;
-}
-
-.topbar h2 {
-  font-size: 100px;
-  margin: 0;
+  height: 80px;
 }
 
 .topbar-links a {
@@ -56,6 +51,13 @@ body {
 .dashboard-main h1 {
   color: #003366;
   margin-bottom: 20px;
+  font-size: 50px;
+}
+
+.dashboard-main h2 {
+  color: #050505;
+  margin-bottom: 30px;
+  font-size: 30px;
 }
 
 /* Cards section */
