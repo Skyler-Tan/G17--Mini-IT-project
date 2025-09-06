@@ -4,17 +4,11 @@
         <meta charset="UTF-8">
         <title>{{ title if title else "Student Peer Review App" }}</title>
         <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+        
+        {% block extra_css %}{% endblock %}
     </head>
     <body>
-        <header>
-            <nav>
-                <img src="{{ url_for('static', filename='uni_logo.png') }}" alt="Uni Logo" class="Logo">
-                <ul>
-                    <li><a href ="{{ url_for('dashboard') }}">Dashboard</a></li>
-                    <li><a href ="{{ url_for('logout') }}">Logout</a></li>
-                </ul>
-            </nav>
-        </header>
+        
 
         <main>
             {% block content %}{% endblock %}

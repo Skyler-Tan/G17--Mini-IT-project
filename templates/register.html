@@ -7,7 +7,8 @@
 </head>
 <body>
     <div class="login-container">
-        <h2>Create an Account</h2>
+      <img src="{{ url_for('static', filename='uni_logo-removebg-preview.png') }}" alt="University Logo" class="logo">
+       <h2>Create an Account</h2>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
@@ -24,14 +25,16 @@
             <input type="text" name="username" placeholder="Create a Username" required><br>
             <input type="password" name="password" placeholder="Create a Password" required><br>
             <input type="email" name="email" placeholder="Enter your MMU email address" required><br>
+            <select name="role">
+              <option value="student">Student</option>
+              <option value="lecturer">Lecturer</option>
+              <option value="admin">Admin</option>
+            </select>
+            
             <button type="submit">Register</button>
         </form>
 
-        <select name="role">
-          <option value="student">Student</option>
-          <option value="lecturer">Lecturer</option>
-          <option value="admin">Admin</option>
-        </select>
+        
           
 
         <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>

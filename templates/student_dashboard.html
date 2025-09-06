@@ -1,10 +1,44 @@
 {% extends "base.html" %}
 
+{% block title %}Dashboard - Peer Review App{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+{% endblock %}
+
 {% block content %}
-<h1>Welcome, {{ user.first_name }}!</h1>
+<div class="sidebar">
+  <div class="logo-area">
+    <img src="{{ url_for('static', filename='uni_logo-removebg-preview.png') }}" alt="University Logo">
+    <h2>Dashboard</h2>
+  </div>
+  <ul>
+    <li><a href="#">👤 Profile</a></li>
+    <li><a href="#">🔒 Change Password</a></li>
+    <li><a href="{{ url_for('logout') }}" class="logout">🚪 Logout</a></li>
+  </ul>
+</div>
 
-<p>This is your student dashboard.</p>
-
-<a href="{{ url_for('change_password')}}">Change Password</a>
-<a href="{{ url_for('logout')}}">Logout</a>
+<div class="main-content">
+  <header>
+    <h1>Welcome, {{ user.first_name }}</h1>
+  </header>
+  <section class="cards">
+    <div class="card">
+      <h3>Profile</h3>
+      <p>View and edit your personal details.</p>
+      <button>Open</button>
+    </div>
+    <div class="card">
+      <h3>Change Password</h3>
+      <p>Update your account password securely.</p>
+      <button>Change</button>
+    </div>
+    <div class="card">
+      <h3>Logout</h3>
+      <p>Sign out of your account safely.</p>
+      <button onclick="window.location.href='{{ url_for('logout') }}'">Logout</button>
+    </div>
+  </section>
+</div>
 {% endblock %}
