@@ -8,7 +8,7 @@ from flask_login import current_user
 from datetime import datetime
 from flask_migrate import Migrate
 from sqlalchemy import or_
-
+from sqlalchemy import text
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yoursecretkey'   # change this
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
@@ -36,7 +36,8 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)  # hashed password
-    role = db.Column(db.String(20), nullable=False, default='student')  # student/lecturer/admin role
+    role = db.Column(db.String(20), nullable=False, default='student')
+    gender = db.Column(db.String(20), nullable=False, server_default=text("'Other"))
 
 
 @login_manager.user_loader
@@ -101,6 +102,7 @@ def register():
         email = request.form.get("email")
         password = request.form.get("password") 
         role = request.form.get('role', 'student') 
+        gender = request.form.get('gender') 
 
         existing_user = User.query.filter(or_(User.username == username, User.email == email, User.student_id == student_id)).first()
         if existing_user:
@@ -108,7 +110,7 @@ def register():
             return redirect(url_for('register'))
 
         hashed_pw = generate_password_hash(password, method='pbkdf2:sha256')
-        new_user = User(student_id = student_id, first_name = first_name, last_name = last_name, username=username, email=email, password=hashed_pw, role=role)
+        new_user = User(student_id = student_id, first_name = first_name, last_name = last_name, username=username, email=email, password=hashed_pw, role=role, gender=gender)
         
         db.session.add(new_user)
         db.session.commit()
