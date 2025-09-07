@@ -7,6 +7,12 @@
 {% endblock %}
 
 {% block content %}
+
+<header class="topbar">
+  <div class="logo-area">
+    <img src="{{ url_for('static', filename='uni_logo-removebg-preview.png') }}" alt="University Logo">
+  </div>
+</header>
 <main class="profile-container">
     <h1>My Profile</h1>
     <form method="POST" action="{{ url_for('profile') }}">
