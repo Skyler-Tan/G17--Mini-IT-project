@@ -1,13 +1,14 @@
 import os
 import csv
+from io import StringIO
+from datetime import datetime
 from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, make_response
 
 from config import Config
-from models import db, Class, Group, Student
+from models import db, Class, Group, Student, Review, Setting
 
 ALLOWED_EXT = {"csv"}
-
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXT
 
@@ -25,6 +26,7 @@ with app.app_context():
 def home():
     return redirect(url_for("list_classes"))
 
+# ---------- Card 1: Classes ----------
 @app.route("/classes", methods=["GET", "POST"])
 def list_classes():
     if request.method == "POST":
@@ -57,6 +59,7 @@ def delete_class(class_id):
         flash(f"Error deleting class: {e}", "error")
     return redirect(url_for("list_classes"))
 
+# ---------- Card 1: Groups ----------
 @app.route("/classes/<int:class_id>/groups", methods=["GET", "POST"])
 def manage_groups(class_id):
     cls = Class.query.get_or_404(class_id)
@@ -91,6 +94,7 @@ def delete_group(group_id):
         flash(f"Error deleting group: {e}", "error")
     return redirect(url_for("manage_groups", class_id=class_id))
 
+# ---------- Card 2: Students ----------
 @app.route("/students", methods=["GET", "POST"])
 def manage_students():
     classes = Class.query.order_by(Class.name).all()
@@ -99,10 +103,8 @@ def manage_students():
         name = (request.form.get("name") or "").strip()
         email = (request.form.get("email") or "").strip()
         student_id = (request.form.get("student_id") or "").strip() or None
-        class_id = request.form.get("class_id") or None
-        group_id = request.form.get("group_id") or None
-        class_id = int(class_id) if class_id else None
-        group_id = int(group_id) if group_id else None
+        class_id = int(request.form.get("class_id") or 0) or None
+        group_id = int(request.form.get("group_id") or 0) or None
 
         if not name or not email:
             flash("Name and email required", "error")
@@ -133,6 +135,7 @@ def delete_student(student_id):
         flash(f"Error removing student: {e}", "error")
     return redirect(url_for("manage_students"))
 
+# ---------- Card 2: Import CSV ----------
 @app.route("/students/import", methods=["GET", "POST"])
 def import_students():
     if request.method == "POST":
@@ -149,69 +152,80 @@ def import_students():
         f.save(path)
 
         inserted = skipped = 0
-        errors = []
         try:
             with open(path, newline='', encoding='utf-8-sig') as csvfile:
                 reader = csv.DictReader(csvfile)
-                if not reader.fieldnames:
-                    flash("CSV has no header", "error")
-                    return redirect(url_for("import_students"))
-                headers = [h.strip().lower() for h in reader.fieldnames]
-                required = {"name", "email"}
-                if not required.issubset(set(headers)):
-                    miss = required - set(headers)
-                    flash(f"Missing required columns: {', '.join(miss)}", "error")
-                    return redirect(url_for("import_students"))
-
-                for idx, row in enumerate(reader, start=2):
-                    try:
-                        row_norm = {k.strip().lower(): (v or "").strip() for k, v in row.items()}
-                        name = row_norm.get('name', '')
-                        email = row_norm.get('email', '')
-                        student_id = row_norm.get('student_id') or None
-                        class_id = row_norm.get('class_id') or None
-                        group_id = row_norm.get('group_id') or None
-
-                        class_id = int(class_id) if class_id and class_id.isdigit() else None
-                        group_id = int(group_id) if group_id and group_id.isdigit() else None
-
-                        if not name or not email:
-                            skipped += 1
-                            errors.append(f"Row {idx}: name/email missing")
-                            continue
-
-                        if class_id and not Class.query.get(class_id):
-                            skipped += 1
-                            errors.append(f"Row {idx}: class_id {class_id} not found")
-                            continue
-                        if group_id and not Group.query.get(group_id):
-                            skipped += 1
-                            errors.append(f"Row {idx}: group_id {group_id} not found")
-                            continue
-
-                        s = Student(name=name, email=email, student_id=student_id,
-                                    class_id=class_id, group_id=group_id)
-                        db.session.add(s)
-                        inserted += 1
-                    except Exception as row_err:
+                for row in reader:
+                    name = (row.get("name") or "").strip()
+                    email = (row.get("email") or "").strip()
+                    if not name or not email:
                         skipped += 1
-                        errors.append(f"Row {idx}: {row_err}")
+                        continue
+                    s = Student(name=name, email=email,
+                                student_id=row.get("student_id") or None,
+                                class_id=int(row.get("class_id")) if row.get("class_id") else None,
+                                group_id=int(row.get("group_id")) if row.get("group_id") else None)
+                    db.session.add(s)
+                    inserted += 1
                 db.session.commit()
             flash(f"CSV processed: {inserted} inserted, {skipped} skipped", "success")
-            for e in errors[:10]:
-                flash(e, "warning")
         except Exception as e:
             db.session.rollback()
             flash(f"Error processing CSV: {e}", "error")
         finally:
-            try:
-                os.remove(path)
-            except Exception:
-                pass
+            try: os.remove(path)
+            except: pass
 
         return redirect(url_for("manage_students"))
-
     return render_template("import_students.html")
+
+# ---------- Card 3: Reviews ----------
+@app.route("/reviews")
+def show_reviews():
+    reviews = Review.query.order_by(Review.timestamp.desc()).all()
+    return render_template("reviews.html", reviews=reviews)
+
+@app.route("/reviews/export")
+def export_reviews():
+    reviews = Review.query.all()
+    si = StringIO()
+    writer = csv.writer(si)
+    writer.writerow(["Reviewer", "Reviewee", "Score", "Comment", "Timestamp"])
+    for r in reviews:
+        writer.writerow([
+            r.reviewer.name if r.reviewer else "-",
+            r.reviewee.name if r.reviewee else "-",
+            r.score, r.comment or "",
+            r.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        ])
+    output = make_response(si.getvalue())
+    output.headers["Content-Disposition"] = "attachment; filename=reviews.csv"
+    output.headers["Content-type"] = "text/csv"
+    return output
+
+# ---------- Card 3: Settings ----------
+@app.route("/settings", methods=["GET", "POST"])
+def manage_settings():
+    setting = Setting.query.first()
+    if not setting:
+        setting = Setting()
+        db.session.add(setting)
+        db.session.commit()
+
+    if request.method == "POST":
+        try:
+            setting.criteria = request.form.get("criteria") or setting.criteria
+            setting.max_score = int(request.form.get("max_score") or setting.max_score)
+            deadline_str = request.form.get("deadline")
+            setting.deadline = datetime.strptime(deadline_str, "%Y-%m-%dT%H:%M") if deadline_str else None
+            db.session.commit()
+            flash("Settings updated successfully", "success")
+            return redirect(url_for("manage_settings"))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error updating settings: {e}", "error")
+
+    return render_template("settings.html", setting=setting)
 
 if __name__ == "__main__":
     app.run(debug=True)
