@@ -147,13 +147,16 @@ def dashboard():
     if current_user.role == "student":
         return render_template('student_dashboard.html', user=current_user, current_year=datetime.now().year)
     elif current_user.role == "lecturer":
-        return render_template('lecturer_dashboard.html', user=current_user, current_year=datetime.now().year)
+        if current_user.gender.lower() == "male":
+            prefix = "Mr."
+        else:
+            prefix = "Ms."
+        return render_template('lecturer_dashboard.html', user=current_user, prefix=prefix, current_year=datetime.now().year)
     elif current_user.role == "admin":
         return render_template('admin_dashboard.html', user=current_user, current_year=datetime.now().year)
     else:
         flash("Role is not recognized", "danger")
         return redirect(url_for("logout"))
-
 
 @app.route('/logout')
 @login_required
