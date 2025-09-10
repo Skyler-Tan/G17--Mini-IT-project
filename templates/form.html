@@ -1,52 +1,119 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="max-width: 800px; margin: 0 auto; padding: 20px;">
-    <h2>Submit Peer Review</h2>
-    <p style="color: #666; margin-bottom: 20px;">Rate your teammates on a scale of 1-5 and provide feedback</p>
+<div class="container" style="max-width: 800px; margin: 0 auto; padding: 20px;">
+    <center>
+        <h2>Peer Review Form</h2>
+        {% if current_user %}
+            <p style="color: #666; margin-bottom: 30px;">Logged in as: <strong>{{ current_user }}</strong></p>
+        {% endif %}
+    </center>
 
-    <form action="{{ url_for('self_assessment') }}" method="POST">
-        <table border="1" cellpadding="12" cellspacing="0" style="width:100%; text-align:center; border-collapse: collapse;">
-            <tr style="background-color: #f8f9fa;">
-                <th>Team Member</th>
-                <th>Score (1–5)</th>
-                <th>Comments</th>
-            </tr>
+    <!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=True) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div style="padding: 12px; margin: 15px 0; border-radius: 6px; border-left: 4px solid;
+                        {% if category == 'error' %}
+                            background: #f8d7da; color: #721c24; border-left-color: #dc3545;
+                        {% elif category == 'success' %}
+                            background: #d4edda; color: #155724; border-left-color: #28a745;
+                        {% else %}
+                            background: #d1ecf1; color: #0c5460; border-left-color: #17a2b8;
+                        {% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
 
-            {% set students = ["Student A", "Student B", "Student C", "Student D"] %}
-            {% set current_user = "Student A" %}
-            
-            {% for s in students %}
-                {% if s != current_user %}
-                <tr>
-                    <td><strong>{{ s }}</strong>
-                        <input type="hidden" name="reviewee[]" value="{{ s }}">
-                    </td>
-                    <td>
-                        <select name="score[]" required style="padding: 5px; width: 120px;">
-                            <option value="">Select</option>
-                            <option value="5">5 - Excellent</option>
-                            <option value="4">4 - Very Good</option>
-                            <option value="3">3 - Good</option>
-                            <option value="2">2 - Fair</option>
-                            <option value="1">1 - Poor</option>
-                        </select>
-                    </td>
-                    <td>
-                        <textarea name="comment[]" 
-                                style="width: 90%; padding: 8px; min-height: 60px;" 
-                                placeholder="Provide constructive feedback..."></textarea>
-                    </td>
-                </tr>
+    <!-- Instructions -->
+    <div style="background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+        <h4 style="margin-top: 0; color: #495057;">Instructions:</h4>
+        <ul style="color: #6c757d; margin-bottom: 0;">
+            <li>Rate each team member on a scale of 1-5 (1 = Poor, 5 = Excellent)</li>
+            <li>Provide constructive comments about their contribution</li>
+            <li>Be honest and fair in your evaluations</li>
+            <li>You will complete a self-assessment after this step</li>
+        </ul>
+    </div>
+
+    <form method="POST" action="{{ url_for('form') }}">
+        <div id="reviews">
+            {% set all_students = ["Student A", "Student B", "Student C", "Student D"] %}
+            {% set review_count = 1 %}
+            {% for student in all_students %}
+                {% if student != current_user %}
+                    <div class="review-item" style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h4 style="margin-top: 0; color: #333;">Review {{ review_count }}: {{ student }}</h4>
+                        
+                        <input type="hidden" name="reviewee[]" value="{{ student }}">
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #555;">
+                                Score (1-5): <span style="color: #dc3545;">*</span>
+                            </label>
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                {% for score in range(1, 6) %}
+                                    <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                                        <input type="radio" name="score[]" value="{{ score }}" required 
+                                               style="margin-right: 5px; transform: scale(1.2);">
+                                        <span style="{% if score <= 2 %}color: #dc3545;{% elif score <= 3 %}color: #ffc107;{% else %}color: #28a745;{% endif %}">
+                                            {{ score }}
+                                        </span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                            <small style="color: #6c757d; display: block; margin-top: 5px;">
+                                1 = Poor, 2 = Below Average, 3 = Average, 4 = Good, 5 = Excellent
+                            </small>
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #555;">
+                                Comment (Optional):
+                            </label>
+                            <textarea name="comment[]" rows="3" 
+                                    style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; resize: vertical;"
+                                    placeholder="Describe their contribution, strengths, areas for improvement..."></textarea>
+                        </div>
+                    </div>
+                    {% set review_count = review_count + 1 %}
                 {% endif %}
             {% endfor %}
-        </table>
+        </div>
 
-        <br>
-        <div style="text-align: center;">
-            <button type="submit" style="padding: 12px 25px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
-                Next: Self-Assessment
+        <div style="text-align: center; margin-top: 30px;">
+            <button type="submit" style="background: #28a745; color: white; padding: 12px 30px; 
+                                         border: none; border-radius: 6px; cursor: pointer; font-size: 16px;
+                                         transition: background-color 0.3s;">
+                Submit Peer Reviews
             </button>
+            <br>
+            <small style="color: #6c757d; margin-top: 10px; display: block;">
+                After submitting, you'll complete a self-assessment
+            </small>
         </div>
     </form>
+
+    <!-- Navigation -->
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+    </div>
 </div>
+
+<style>
+button:hover {
+    background-color: #218838 !important;
+    transform: translateY(-1px);
+}
+
+.review-item:hover {
+    border-color: #007bff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+input[type="radio"]:checked + span {
+    font-weight: bold;
+}
+</style>
 {% endblock %}

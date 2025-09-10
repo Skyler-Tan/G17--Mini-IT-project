@@ -3,8 +3,31 @@
 <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
     <center><h2>Peer Review Results</h2></center>
     <br>
-
-    <!-- Results Table in a Box -->
+    
+    <!-- Input form for group mark and lecturer evaluation -->
+    {% if not group_mark or not lecturer_eval %}
+    <div style="background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
+        <h4>Enter Calculation Parameters</h4>
+        <form method="POST" action="{{ url_for('results') }}">
+            <div style="margin-bottom: 15px;">
+                <label for="group_mark" style="display: block; margin-bottom: 5px; font-weight: bold;">Group Mark (out of 100):</label>
+                <input type="number" id="group_mark" name="group_mark" min="0" max="100" step="0.1" 
+                       value="{{ group_mark if group_mark else '' }}" 
+                       style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 200px;" required>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label for="lecturer_eval" style="display: block; margin-bottom: 5px; font-weight: bold;">Lecturer Evaluation (1-5):</label>
+                <input type="number" id="lecturer_eval" name="lecturer_eval" min="1" max="5" step="0.1" 
+                       value="{{ lecturer_eval if lecturer_eval else '' }}" 
+                       style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 200px;" required>
+            </div>
+            <button type="submit" style="background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">
+                Calculate Results
+            </button>
+        </form>
+    </div>
+    {% endif %}
+    
     <div style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
         {% if rows %}
         <table class="results-table" style="width: 100%; border-collapse: collapse; text-align: center;">
@@ -20,19 +43,14 @@
                 {% for row in rows %}
                 <tr>
                     <td style="padding: 10px; border: 1px solid #ddd;"><strong>{{ row[0] }}</strong></td>
-                    
-                    <!-- Placeholder instead of avg -->
                     <td style="padding: 10px; border: 1px solid #ddd;">
-                        <em style="color: #999;">Recalculating…</em>
+                        <span style="color: #28a745; font-weight: bold;">{{ row[1] }}/5</span>
                     </td>
-
-                    <!-- Placeholder instead of final -->
                     <td style="padding: 10px; border: 1px solid #ddd;">
-                        <em style="color: #999;">Recalculating…</em>
+                        <span style="color: #dc3545; font-weight: bold;">{{ row[2] }}%</span>
                     </td>
-
                     <td style="padding: 10px; border: 1px solid #ddd; text-align: left; max-width: 300px;">
-                        {% if row[3] %}
+                        {% if row[3] and row[3] != "No comments" %}
                             {{ row[3] }}
                         {% else %}
                             <em style="color: #999;">No comments</em>
@@ -44,26 +62,47 @@
         </table>
         {% else %}
         <div style="text-align: center; padding: 40px; color: #666;">
-            <p>No review data available. Please submit some peer reviews first.</p>
+            {% if group_mark and lecturer_eval %}
+                <p>No review data available. Please submit some peer reviews first.</p>
+            {% else %}
+                <p>Enter the group mark and lecturer evaluation above to calculate results.</p>
+            {% endif %}
         </div>
         {% endif %}
     </div>
 
-    <!-- Placeholder Formula Box -->
-    <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #ffeeba;">
-        <strong>Recalculating peer scores and final marks…</strong><br>
-        The values will appear once database tracking is enabled.
+    <!-- Formula explanation -->
+    {% if group_mark and lecturer_eval %}
+    <div style="background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <strong>Calculation Formula:</strong><br>
+        Final Mark = (Group Mark × 50%) + (Group Mark × 25% × Peer Score/5) + (Group Mark × 25% × Lecturer Eval/5)<br>
+        <small>
+            Using Group Mark: {{ group_mark }}%, Lecturer Evaluation: {{ lecturer_eval }}/5
+        </small>
     </div>
+    {% endif %}
 
     <!-- Navigation Buttons -->
     <div style="text-align: center; margin-top: 30px;">
         <form action="{{ url_for('form') }}" style="display: inline;">
-            <button type="submit" class="btn btn-secondary">Edit Reviews</button>
+            <button type="submit" class="btn btn-secondary" 
+                    style="background: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px;">
+                Edit Reviews
+            </button>
         </form>
         
         <form action="{{ url_for('index') }}" style="display: inline;">
-            <button type="submit" class="btn btn-primary">Start Over</button>
+            <button type="submit" class="btn btn-primary"
+                    style="background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px;">
+                Start Over
+            </button>
         </form>
+
+        <!-- Debug link to check database -->
+        <a href="{{ url_for('inspect_db') }}" target="_blank" 
+           style="display: inline-block; background: #17a2b8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin: 5px;">
+            Inspect Database
+        </a>
     </div>
 </div>
 {% endblock %}

@@ -1,69 +1,34 @@
-{% extends "base.html" %}
+</style>
+{% endblock %}{% extends "base.html" %}
 {% block content %}
 <div class="container" style="max-width: 800px; margin: 0 auto; padding: 20px;">
-    <center><h2>Self Assessment</h2></center>
-    <p style="text-align: center; color: #666; margin-bottom: 30px;">
-        Please reflect on your group work experience
-    </p>
+    <center>
+        <h2>Self Assessment</h2>
+        {% if current_user %}
+            <p style="color: #666; margin-bottom: 30px;">Completing assessment for: <strong>{{ current_user }}</strong></p>
+        {% endif %}
+    </center>
     
-    <form action="{{ url_for('finish') }}" method="POST">
-        <!-- Pass forward the peer review data -->
-        {% if reviewees %}
-            {% for r in reviewees %}
-                <input type="hidden" name="reviewee[]" value="{{ r }}">
-            {% endfor %}
-            {% for s in scores %}
-                <input type="hidden" name="score[]" value="{{ s }}">
-            {% endfor %}
-            {% for c in comments %}
-                <input type="hidden" name="comment[]" value="{{ c }}">
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div style="padding: 12px; margin: 15px 0; border-radius: 6px; border-left: 4px solid;
+                            {% if category == 'error' %}
+                                background: #f8d7da; color: #721c24; border-left-color: #dc3545;
+                            {% elif category == 'success' %}
+                                background: #d4edda; color: #155724; border-left-color: #28a745;
+                            {% else %}
+                                background: #d1ecf1; color: #0c5460; border-left-color: #17a2b8;
+                            {% endif %}">
+                    {{ message }}
+                </div>
             {% endfor %}
         {% endif %}
-
-        <div class="form-group">
-            <label><strong>1. Write a brief summary of your contribution to the project:</strong></label>
-            <textarea name="summary" rows="4" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-family:inherit;" required placeholder="Describe what you contributed to the group project..."></textarea>
-        </div>
-
-        <div class="form-group">
-            <label><strong>2. What challenges did you face and what have you learned?</strong></label>
-            <textarea name="challenges" rows="4" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-family:inherit;" required placeholder="Describe the challenges you encountered and lessons learned..."></textarea>
-        </div>
-
-        <div class="form-group">
-            <label><strong>3. What would you do differently if you could start over?</strong></label>
-            <textarea name="different" rows="4" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-family:inherit;" required placeholder="Reflect on what you would change or improve..."></textarea>
-        </div>
-
-        <div class="form-group">
-            <label><strong>4. Describe your role in the group and how it helped the team:</strong></label>
-            <textarea name="role" rows="4" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-family:inherit;" required placeholder="What was your primary role and how did it benefit the group..."></textarea>
-        </div>
-
-        <div class="form-group">
-            <label><strong>5. Additional feedback or comments (optional):</strong></label>
-            <textarea name="feedback" rows="4" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-family:inherit;" placeholder="Any other thoughts or feedback..."></textarea>
-        </div>
-
-        <div style="text-align:center; margin-top: 30px;">
-            <button type="submit" style="padding:12px 30px; font-size:16px; background-color:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">
-                Complete Assessment
-            </button>
-        </div>
-    </form>
-</div>
-
-<style>
-.form-group {
-    margin-bottom: 25px;
-}
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-    color: #333;
-}
-button:hover {
-    background-color: #0056b3;
-}
-</style>
-{% endblock %}
+    {% endwith %}
+    
+    <!-- Instructions -->
+    <div style="background: #e8f4fd; border: 1px solid #b3d9ff; border-radius: 8px; padding: 15px; margin-bottom: 25px;">
+        <h4 style="margin-top: 0; color: #0066cc;">📝 Self-Reflection Instructions</h4>
+        <p style="color: #004085; margin-bottom: 0;">
+            Take time to honestly reflect on your group work experience. Your responses will help improve future collaborations and provide valuable insights for
