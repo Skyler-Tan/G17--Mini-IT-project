@@ -4,8 +4,15 @@
     <center><h2>Peer Review Results</h2></center>
     <br>
     
+    {% if not all_completed %}
+    <div style="background: #fff3cd; border: 1px solid #ffeeba; border-radius: 10px; padding: 20px; margin-bottom: 20px; color: #856404; text-align: center;">
+        <h4>Recalculating...</h4>
+        <p>Results will be available once all 4 students have completed their peer reviews and self-assessments.</p>
+    </div>
+    {% endif %}
+
     <!-- Input form for group mark and lecturer evaluation -->
-    {% if not group_mark or not lecturer_eval %}
+    {% if all_completed and (not group_mark or not lecturer_eval) %}
     <div style="background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
         <h4>Enter Calculation Parameters</h4>
         <form method="POST" action="{{ url_for('results') }}">
@@ -29,7 +36,7 @@
     {% endif %}
     
     <div style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-        {% if rows %}
+        {% if all_completed and rows %}
         <table class="results-table" style="width: 100%; border-collapse: collapse; text-align: center;">
             <thead style="background-color: #f8f9fa;">
                 <tr>
@@ -61,6 +68,7 @@
             </tbody>
         </table>
         {% else %}
+        {% if all_completed %}
         <div style="text-align: center; padding: 40px; color: #666;">
             {% if group_mark and lecturer_eval %}
                 <p>No review data available. Please submit some peer reviews first.</p>
@@ -69,10 +77,11 @@
             {% endif %}
         </div>
         {% endif %}
+        {% endif %}
     </div>
 
     <!-- Formula explanation -->
-    {% if group_mark and lecturer_eval %}
+    {% if all_completed and group_mark and lecturer_eval %}
     <div style="background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 8px; margin: 20px 0;">
         <strong>Calculation Formula:</strong><br>
         Final Mark = (Group Mark × 50%) + (Group Mark × 25% × Peer Score/5) + (Group Mark × 25% × Lecturer Eval/5)<br>

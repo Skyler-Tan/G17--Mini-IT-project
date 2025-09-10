@@ -18,9 +18,9 @@
                 </div>
             </a>
             
-            <!-- Completion Checkmark -->
+            <!-- Completion Checkmark: show only when peer reviews are submitted -->
             <div style="margin-left: 20px;">
-                {% if completion_status[student] %}
+                {% if completion_status[student]['reviews_count'] > 0 %}
                     <svg width="30" height="30" style="color: #28a745;">
                         <path d="M5 15 L12 22 L25 8" stroke="#28a745" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>

@@ -1,12 +1,17 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_migrate import Migrate
+from sqlalchemy import inspect
+import os
+from pathlib import Path
 from models import db, User, PeerReview, SelfAssessment, TeacherMark, DatabaseManager
 
 app = Flask(__name__)
 app.secret_key = "secret-key"  # needed for session + flash
 
 # Database config (using instance/db.db)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.db"
+os.makedirs(app.instance_path, exist_ok=True)
+db_path = Path(app.instance_path) / "db.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path.as_posix()}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Init database + migration
@@ -83,7 +88,7 @@ def dashboard():
     completed_count = sum(1 for s in completion_status.values() if s["completed"])
     total_students = len(students)
     all_completed = all(s["completed"] for s in completion_status.values())
-    teacher_marks = TeacherMark.query.first()
+    teacher_marks = get_teacher_marks()
     
     results = None
     if all_completed:
@@ -144,10 +149,14 @@ def teacher_input():
             flash("Rating must be between 1 and 5", "error")
             return redirect(url_for("dashboard"))
         
-        # Delete old teacher marks and create new one
-        TeacherMark.query.delete()
-        teacher_mark = TeacherMark(group_mark=group_mark, rating=rating)
-        db.session.add(teacher_mark)
+        # Upsert teacher marks (single latest record)
+        teacher_mark = TeacherMark.query.order_by(TeacherMark.id.desc()).first()
+        if teacher_mark:
+            teacher_mark.group_mark = group_mark
+            teacher_mark.rating = rating
+        else:
+            teacher_mark = TeacherMark(group_mark=group_mark, rating=rating)
+            db.session.add(teacher_mark)
         db.session.commit()
         
         flash("Teacher marks saved successfully!", "success")
@@ -201,7 +210,11 @@ def form():
             flash(f"An error occurred: {str(e)}", "error")
             return redirect(url_for("form"))
     
-    return render_template("form.html", current_user=current_user)
+    # Prefill existing peer reviews for this user
+    existing_reviews = PeerReview.query.filter_by(reviewer_name=current_user).all()
+    prior_reviews = {r.reviewee_name: {"score": r.score, "comment": r.comment or ""} for r in existing_reviews}
+
+    return render_template("form.html", current_user=current_user, prior_reviews=prior_reviews)
 
 @app.route("/self_assessment", methods=["GET", "POST"])
 def self_assessment():
@@ -266,18 +279,35 @@ def results():
             rating = float(request.form.get("lecturer_eval", 0))
             
             if 0 <= group_mark <= 100 and 1 <= rating <= 5:
-                # Save as teacher mark
-                TeacherMark.query.delete()
-                teacher_mark = TeacherMark(group_mark=group_mark, rating=rating)
-                db.session.add(teacher_mark)
+                # Upsert as teacher mark
+                teacher_mark = TeacherMark.query.order_by(TeacherMark.id.desc()).first()
+                if teacher_mark:
+                    teacher_mark.group_mark = group_mark
+                    teacher_mark.rating = rating
+                else:
+                    teacher_mark = TeacherMark(group_mark=group_mark, rating=rating)
+                    db.session.add(teacher_mark)
                 db.session.commit()
                 flash("Marks saved successfully!", "success")
-        except:
+            else:
+                db.session.rollback()
+                flash("Invalid input values", "error")
+        except (ValueError, TypeError):
+            db.session.rollback()
             flash("Invalid input values", "error")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error saving marks: {e}", "error")
 
     teacher_marks = get_teacher_marks()
     students = ["Student A", "Student B", "Student C", "Student D"]
     rows = []
+
+    # Check if all students completed both peer reviews and self-assessment
+    completion_status = DatabaseManager.get_completion_summary()
+    all_completed = all(s['completed'] for s in completion_status.values())
+    if not all_completed:
+        return render_template("results.html", all_completed=False)
 
     if teacher_marks:
         for student in students:
@@ -304,7 +334,8 @@ def results():
     return render_template("results.html",
                          rows=rows,
                          group_mark=teacher_marks.group_mark if teacher_marks else 0,
-                         lecturer_eval=teacher_marks.rating if teacher_marks else 0)
+                         lecturer_eval=teacher_marks.rating if teacher_marks else 0,
+                         all_completed=True)
 
 @app.route("/submit", methods=["POST"])
 def submit():
@@ -333,12 +364,11 @@ def debug_db():
         result = "<h2>🔍 Database Debug Info</h2>"
         
         # Check if database file exists
-        import os
-        db_path = "db.db"
-        result += f"<p><strong>Database file exists:</strong> {os.path.exists(db_path)}</p>"
+        db_path = Path(app.instance_path) / "db.db"
+        result += f"<p><strong>Database file:</strong> {db_path} (exists: {db_path.exists()})</p>"
         
         # Check tables
-        inspector = db.inspect(db.engine)
+        inspector = inspect(db.engine)
         tables = inspector.get_table_names()
         result += f"<p><strong>Tables:</strong> {tables}</p>"
         

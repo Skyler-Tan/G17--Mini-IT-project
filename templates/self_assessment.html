@@ -33,7 +33,7 @@
         </p>
     </div>
     
-    <form action="{{ url_for('finish') }}" method="POST">
+    <form action="{{ url_for('self_assessment') }}" method="POST">
         <!-- Pass forward the peer review data -->
         {% if reviewees %}
             {% for r in reviewees %}

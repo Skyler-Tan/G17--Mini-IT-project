@@ -47,8 +47,9 @@
                 <div class="review-item" style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     <h4 style="margin-top: 0; color: #333;">Review {{ review_count }}: {{ student }}</h4>
                     
-                    <!-- Hidden field to track reviewee -->
-                    <input type="hidden" name="reviewee_{{ student_index }}" value="{{ student }}">
+                    <!-- Hidden fields to track reviewee and score (score synced from radios) -->
+                    <input type="hidden" name="reviewee[]" value="{{ student }}">
+                    <input type="hidden" name="score[]" id="score_val_{{ student_index }}" value="{{ prior_reviews.get(student, {}).get('score', '') }}">
                     
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #555;">
@@ -58,7 +59,7 @@
                             {% for score in range(1, 6) %}
                                 <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
                                     <input type="radio" name="score_{{ student_index }}" value="{{ score }}" required 
-                                           style="margin-right: 5px; transform: scale(1.2);">
+                                           style="margin-right: 5px; transform: scale(1.2);" onchange="document.getElementById('score_val_{{ student_index }}').value=this.value;" {% if prior_reviews.get(student) and prior_reviews.get(student).get('score') == score %}checked{% endif %}>
                                     <span style="{% if score <= 2 %}color: #dc3545;{% elif score <= 3 %}color: #ffc107;{% else %}color: #28a745;{% endif %}">
                                         {{ score }}
                                     </span>
@@ -74,16 +75,15 @@
                         <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #555;">
                             Comment (Optional):
                         </label>
-                        <textarea name="comment_{{ student_index }}" rows="3" 
+                        <textarea name="comment[]" rows="3" 
                                 style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; resize: vertical;"
-                                placeholder="Describe their contribution, strengths, areas for improvement..."></textarea>
+                                placeholder="Describe their contribution, strengths, areas for improvement...">{{ prior_reviews.get(student, {}).get('comment', '') }}</textarea>
                     </div>
                 </div>
                 {% set review_count = review_count + 1 %}
             {% endif %}
         {% endfor %}
     </div>
-</form>
 
         <div style="text-align: center; margin-top: 30px;">
             <button type="submit" style="background: #28a745; color: white; padding: 12px 30px; 
