@@ -156,7 +156,6 @@ def import_students():
                 if not reader.fieldnames:
                     flash("CSV has no header", "error")
                     return redirect(url_for("import_students"))
-                # normalize headers
                 headers = [h.strip().lower() for h in reader.fieldnames]
                 required = {"name", "email"}
                 if not required.issubset(set(headers)):
@@ -166,7 +165,6 @@ def import_students():
 
                 for idx, row in enumerate(reader, start=2):
                     try:
-                        # case-insensitive access
                         row_norm = {k.strip().lower(): (v or "").strip() for k, v in row.items()}
                         name = row_norm.get('name', '')
                         email = row_norm.get('email', '')
@@ -200,7 +198,6 @@ def import_students():
                         errors.append(f"Row {idx}: {row_err}")
                 db.session.commit()
             flash(f"CSV processed: {inserted} inserted, {skipped} skipped", "success")
-            
             for e in errors[:10]:
                 flash(e, "warning")
         except Exception as e:

@@ -1,6 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
 
-# create SQLAlchemy object here so app can import it
 db = SQLAlchemy()
 
 class Class(db.Model):
@@ -32,7 +31,7 @@ class Group(db.Model):
 class Student(db.Model):
     __tablename__ = "students"
     id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.String(64), nullable=True)   # optional matric / id
+    student_id = db.Column(db.String(64), nullable=True)
     name = db.Column(db.String(120), nullable=False)
     email = db.Column(db.String(255), nullable=False)
 
