@@ -119,12 +119,28 @@ p a:hover {
   height: auto;
 }
 
-.flash.success { 
-  color:green;
-  font weight: bold; 
+#flash-messages {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: 80%;
+  max-width: 500px;
 }
-.flash.error { 
-  color:red; 
-  font weight: bold;
+
+.flash {
+  padding: 12px 20px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: bold;
+  opacity: 0.95;
 }
-.flash.info { color:blue; }
+
+/* Different colors by category */
+.flash.success { background-color: #28a745; color: white; }  /* green */
+.flash.danger  { background-color: #dc3545; color: white; }  /* red */
+.flash.info    { background-color: #17a2b8; color: white; }  /* blue */
+.flash.warning { background-color: #ffc107; color: black; }  /* yellow */
+

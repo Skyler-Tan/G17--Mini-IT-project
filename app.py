@@ -152,8 +152,6 @@ def dashboard():
         else:
             prefix = "Ms."
         return render_template('lecturer_dashboard.html', user=current_user, prefix=prefix, current_year=datetime.now().year)
-    elif current_user.role == "admin":
-        return render_template('admin_dashboard.html', user=current_user, current_year=datetime.now().year)
     else:
         flash("Role is not recognized", "danger")
         return redirect(url_for("logout"))
@@ -168,15 +166,41 @@ def logout():
 @app.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
+    if current_user.role == "student":
+        return redirect(url_for("student_profile"))
+    elif current_user.role == "lecturer":
+        return redirect(url_for("lecturer_profile"))
+    else:
+        flash("Role is not recognized.", "danger")
+        return redirect(url_for("dashboard"))
+    
+@app.route("/student/profile")
+@login_required
+def student_profile():
+    if current_user.role != "student":
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for("dashboard"))
+    
+    return render_template("student_profile.html", user=current_user)
+
+@app.route("/lecturer/profile")
+@login_required
+def lecturer_profile():
+    if current_user.role != "lecturer":
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for("dashboard"))
+    
     if request.method == "POST":
-        current_user.username = request.form["username"]
+        current_user.first_name = request.form["first_name"]
+        current_user.last_name = request.form["last_name"]
         current_user.email = request.form["email"]
+        current_user.student_id = request.form["student_id"]
+        current_user.username = request.form["username"]
 
         db.session.commit()
         flash("Profile updated successfully!", "success")
-        return redirect(url_for("profile"))
-
-    return render_template("profile.html", user=current_user)
+    
+    return render_template("lecturer_profile.html", user=current_user)
 
 
 if __name__ == "__main__":

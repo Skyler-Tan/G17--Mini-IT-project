@@ -16,12 +16,28 @@
 <main class="dashboard-main">
   <h1>Student Peer Review System</h1>
   <h2>Welcome, {{ user.first_name }}!</h2>
-
+  
+  <h3>Courses</h3>
   <section class="cards">
+    <div class="card">
+      <h3>Subject 1</h3>
+      <p>View and edit your personal details.</p>
+      <button onclick="window.location.href='{{ url_for('profile') }}'">Open</button>
+    </div>
+    <div class="card">
+      <h3>Subject 2</h3>
+      <p>View and edit your personal details.</p>
+      <button onclick="window.location.href='{{ url_for('profile') }}'">Open</button>
+    </div>
+    <div class="card">
+      <h3>Subject 3</h3>
+      <p>View and edit your personal details.</p>
+      <button onclick="window.location.href='{{ url_for('profile') }}'">Open</button>
+    </div>
     <div class="card">
       <h3>Profile</h3>
       <p>View and edit your personal details.</p>
-      <button onclick="window.location.href='{{ url_for('profile') }}'">Open</button>
+      <button onclick="window.location.href='{{ url_for('student_profile') }}'">Open</button>
     </div>
     <div class="card">
       <h3>Change Password</h3>
