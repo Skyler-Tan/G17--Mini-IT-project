@@ -39,9 +39,8 @@
 
     <form method="POST" action="{{ url_for('form') }}">
     <div id="reviews">
-        {% set all_students = ["Student A", "Student B", "Student C", "Student D"] %}
         {% set review_count = 1 %}
-        {% for student in all_students %}
+        {% for student in students %}
             {% if student != current_user %}
                 {% set student_index = loop.index0 %}
                 <div class="review-item" style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
@@ -84,6 +83,13 @@
             {% endif %}
         {% endfor %}
     </div>
+
+        <!-- Anonymous group feedback -->
+        <div style="background:#f8f9fa;border:1px solid #ddd;border-radius:10px;padding:20px;margin-top:10px;">
+            <label style="display:block;margin-bottom:8px;font-weight:bold;color:#555;">Anonymous feedback to the group (optional):</label>
+            <textarea name="anonymous_review" rows="3" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;" placeholder="Anything you want to say anonymously to the entire group..."></textarea>
+            <small style="color:#6c757d;display:block;margin-top:5px;">This feedback is stored without your name.</small>
+        </div>
 
         <div style="text-align: center; margin-top: 30px;">
             <button type="submit" style="background: #28a745; color: white; padding: 12px 30px; 

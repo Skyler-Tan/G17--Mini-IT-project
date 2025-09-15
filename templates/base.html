@@ -2,15 +2,27 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>G17 Peer Review System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>{{ title if title else "Student Peer Review App" }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">
+    
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <div class="container">
-        <h1>G17 Peer Review System</h1>
-        <hr>
+    <main>
         {% block content %}{% endblock %}
-    </div>
+    </main>
+
+    {% block footer %}
+    <footer class="footer">
+        <p>&copy; {{ current_year }} Multimedia University. All Rights Reserved.</p>
+        <p>
+            <a href="#">Privacy Policy</a> | 
+            <a href="#">Terms of Service</a> | 
+            <a href="#">Contact</a>
+        </p>
+    </footer>
+    {% endblock %}
 </body>
 </html>

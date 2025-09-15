@@ -56,22 +56,15 @@ class SelfAssessment(db.Model):
     def __repr__(self):
         return f'<SelfAssessment {self.student_name}>'
 
-class TeacherMark(db.Model):
-    __tablename__ = 'teacher_marks'
-    
+class AnonymousReview(db.Model):
+    __tablename__ = 'anonymous_reviews'
+
     id = db.Column(db.Integer, primary_key=True)
-    group_mark = db.Column(db.Float, nullable=False)
-    rating = db.Column(db.Float, nullable=False)
+    content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    __table_args__ = (
-        db.CheckConstraint('group_mark >= 0 AND group_mark <= 100', name='check_group_mark_range'),
-        db.CheckConstraint('rating >= 1 AND rating <= 5', name='check_rating_range'),
-    )
-    
+
     def __repr__(self):
-        return f'<TeacherMark Group:{self.group_mark}% Rating:{self.rating}/5>'
+        return f'<AnonymousReview {self.id}>'
 
 # ---------- Database Manager ----------
 class DatabaseManager:
@@ -101,7 +94,7 @@ class DatabaseManager:
     def clear_all_data():
         """Clear all data from the database"""
         try:
-            TeacherMark.query.delete()
+            AnonymousReview.query.delete()
             SelfAssessment.query.delete()
             PeerReview.query.delete()
             User.query.delete()
