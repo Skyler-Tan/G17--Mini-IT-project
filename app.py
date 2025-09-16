@@ -4,10 +4,11 @@ from io import StringIO
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for, flash, make_response
-
+from flask_migrate import Migrate
 from config import Config
 from models import db, Class, Group, Student, Review, Setting
 
+# ✅ Flask app setup
 ALLOWED_EXT = {"csv"}
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXT
@@ -15,18 +16,18 @@ def allowed_file(filename):
 app = Flask(__name__)
 app.config.from_object(Config)
 
+# Pastikan folder instance & upload wujud
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(os.path.join(os.path.dirname(__file__), "instance"), exist_ok=True)
 
 db.init_app(app)
-with app.app_context():
-    db.create_all()
+migrate = Migrate()
+migrate.init_app(app, db)
 
 @app.route("/")
 def home():
     return redirect(url_for("list_classes"))
 
-# ---------- Card 1: Classes ----------
 @app.route("/classes", methods=["GET", "POST"])
 def list_classes():
     if request.method == "POST":
@@ -59,7 +60,6 @@ def delete_class(class_id):
         flash(f"Error deleting class: {e}", "error")
     return redirect(url_for("list_classes"))
 
-# ---------- Card 1: Groups ----------
 @app.route("/classes/<int:class_id>/groups", methods=["GET", "POST"])
 def manage_groups(class_id):
     cls = Class.query.get_or_404(class_id)
@@ -94,7 +94,6 @@ def delete_group(group_id):
         flash(f"Error deleting group: {e}", "error")
     return redirect(url_for("manage_groups", class_id=class_id))
 
-# ---------- Card 2: Students ----------
 @app.route("/students", methods=["GET", "POST"])
 def manage_students():
     classes = Class.query.order_by(Class.name).all()
@@ -135,7 +134,6 @@ def delete_student(student_id):
         flash(f"Error removing student: {e}", "error")
     return redirect(url_for("manage_students"))
 
-# ---------- Card 2: Import CSV ----------
 @app.route("/students/import", methods=["GET", "POST"])
 def import_students():
     if request.method == "POST":
@@ -179,7 +177,6 @@ def import_students():
         return redirect(url_for("manage_students"))
     return render_template("import_students.html")
 
-# ---------- Card 3: Reviews ----------
 @app.route("/reviews")
 def show_reviews():
     reviews = Review.query.order_by(Review.timestamp.desc()).all()
@@ -196,14 +193,13 @@ def export_reviews():
             r.reviewer.name if r.reviewer else "-",
             r.reviewee.name if r.reviewee else "-",
             r.score, r.comment or "",
-            r.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+            r.timestamp.strftime("%Y-%m-%d %H:%M:%S") if r.timestamp else ""
         ])
     output = make_response(si.getvalue())
     output.headers["Content-Disposition"] = "attachment; filename=reviews.csv"
     output.headers["Content-type"] = "text/csv"
     return output
 
-# ---------- Card 3: Settings ----------
 @app.route("/settings", methods=["GET", "POST"])
 def manage_settings():
     setting = Setting.query.first()
