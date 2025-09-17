@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>Subjects</h2>
+
+<form method="post" class="card">
+  <label>New Subject</label>
+  <input name="name" placeholder="e.g. CS101" required>
+  <button type="submit">Create Subject</button>
+</form>
+
+<table>
+  <thead><tr><th>ID</th><th>Name</th><th>Groups</th><th>Actions</th></tr></thead>
+  <tbody>
+    {% for s in subjects %}
+      <tr>
+        <td>{{ s.id }}</td>
+        <td><a href="{{ url_for('manage_groups', subject_id=s.id) }}">{{ s.name }}</a></td>
+        <td>{{ s.groups|length }}</td>
+        <td>
+          <form method="post" action="{{ url_for('delete_subject', subject_id=s.id) }}" onsubmit="return confirm('Delete subject and its groups?');">
+            <button type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -17,17 +17,17 @@
       <input name="email" type="email" required>
     </div>
     <div>
-      <label>Class (optional)</label>
-      <select name="class_id">
+      <label>Subject (optional)</label>
+      <select name="subject_id">
         <option value="">— None —</option>
-        {% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+        {% for subj in subjects %}<option value="{{ subj.id }}">{{ subj.name }}</option>{% endfor %}
       </select>
     </div>
     <div>
       <label>Group (optional)</label>
       <select name="group_id">
         <option value="">— None —</option>
-        {% for g in groups %}<option value="{{ g.id }}">{{ g.name }} (class {{ g.class_id }})</option>{% endfor %}
+        {% for g in groups %}<option value="{{ g.id }}">{{ g.name }} (subject {{ g.subject_id }})</option>{% endfor %}
       </select>
     </div>
   </div>
@@ -35,7 +35,7 @@
 </form>
 
 <table>
-  <thead><tr><th>ID</th><th>StdID</th><th>Name</th><th>Email</th><th>Class</th><th>Group</th><th>Actions</th></tr></thead>
+  <thead><tr><th>ID</th><th>StdID</th><th>Name</th><th>Email</th><th>Subject</th><th>Group</th><th>Actions</th></tr></thead>
   <tbody>
     {% for s in students %}
       <tr>
@@ -43,7 +43,7 @@
         <td>{{ s.student_id or '-' }}</td>
         <td>{{ s.name }}</td>
         <td>{{ s.email }}</td>
-        <td>{{ s.class_.name if s.class_ else '-' }}</td>
+        <td>{{ s.subject.name if s.subject else '-' }}</td>
         <td>{{ s.group.name if s.group else '-' }}</td>
         <td>
           <form method="post" action="{{ url_for('delete_student', student_id=s.id) }}" onsubmit="return confirm('Remove student?');">

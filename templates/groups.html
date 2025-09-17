@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% block content %}
-<h2>Groups — Class: {{ cls.name }}</h2>
+<h2>Groups — Subject: {{ subj.name }}</h2>
 
 <form method="post" class="card">
   <label>New Group</label>
@@ -26,5 +26,5 @@
   </tbody>
 </table>
 
-<p><a href="{{ url_for('list_classes') }}">← Back to classes</a></p>
+<p><a href="{{ url_for('list_subjects') }}">← Back to subjects</a></p>
 {% endblock %}

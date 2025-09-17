@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for, flash, make_response
 from flask_migrate import Migrate
 from config import Config
-from models import db, Class, Group, Student, Review, Setting
+from models import db, Subject, Group, Student, Review, Setting  # ✅ Class → Subject
 
 # ✅ Flask app setup
 ALLOWED_EXT = {"csv"}
@@ -16,7 +16,7 @@ def allowed_file(filename):
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Pastikan folder instance & upload wujud
+# Make sure instance & upload folders exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(os.path.join(os.path.dirname(__file__), "instance"), exist_ok=True)
 
@@ -26,65 +26,65 @@ migrate.init_app(app, db)
 
 @app.route("/")
 def home():
-    return redirect(url_for("list_classes"))
+    return redirect(url_for("list_subjects"))  # ✅
 
-@app.route("/classes", methods=["GET", "POST"])
-def list_classes():
+@app.route("/subjects", methods=["GET", "POST"])  # ✅
+def list_subjects():
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
         if not name:
-            flash("Class name required", "error")
+            flash("Subject name required", "error")
         else:
             try:
-                c = Class(name=name)
-                db.session.add(c)
+                s = Subject(name=name)  # ✅
+                db.session.add(s)
                 db.session.commit()
-                flash("Class created", "success")
-                return redirect(url_for("list_classes"))
+                flash("Subject created", "success")
+                return redirect(url_for("list_subjects"))
             except Exception as e:
                 db.session.rollback()
-                flash(f"Error creating class: {e}", "error")
+                flash(f"Error creating subject: {e}", "error")
 
-    classes = Class.query.order_by(Class.name).all()
-    return render_template("classes.html", classes=classes)
+    subjects = Subject.query.order_by(Subject.name).all()
+    return render_template("subject.html", subjects=subjects)  # ✅
 
-@app.route("/classes/<int:class_id>/delete", methods=["POST"])
-def delete_class(class_id):
-    cls = Class.query.get_or_404(class_id)
+@app.route("/subjects/<int:subject_id>/delete", methods=["POST"])  # ✅
+def delete_subject(subject_id):
+    subj = Subject.query.get_or_404(subject_id)
     try:
-        db.session.delete(cls)
+        db.session.delete(subj)
         db.session.commit()
-        flash("Class deleted", "success")
+        flash("Subject deleted", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"Error deleting class: {e}", "error")
-    return redirect(url_for("list_classes"))
+        flash(f"Error deleting subject: {e}", "error")
+    return redirect(url_for("list_subjects"))
 
-@app.route("/classes/<int:class_id>/groups", methods=["GET", "POST"])
-def manage_groups(class_id):
-    cls = Class.query.get_or_404(class_id)
+@app.route("/subjects/<int:subject_id>/groups", methods=["GET", "POST"])  # ✅
+def manage_groups(subject_id):
+    subj = Subject.query.get_or_404(subject_id)
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
         if not name:
             flash("Group name required", "error")
         else:
             try:
-                g = Group(name=name, class_id=class_id)
+                g = Group(name=name, subject_id=subject_id)  # ✅
                 db.session.add(g)
                 db.session.commit()
                 flash("Group created", "success")
-                return redirect(url_for("manage_groups", class_id=class_id))
+                return redirect(url_for("manage_groups", subject_id=subject_id))
             except Exception as e:
                 db.session.rollback()
                 flash(f"Error creating group: {e}", "error")
 
-    groups = Group.query.filter_by(class_id=class_id).order_by(Group.name).all()
-    return render_template("groups.html", cls=cls, groups=groups)
+    groups = Group.query.filter_by(subject_id=subject_id).order_by(Group.name).all()
+    return render_template("groups.html", subj=subj, groups=groups)  # ✅ cls → subj
 
 @app.route("/groups/<int:group_id>/delete", methods=["POST"])
 def delete_group(group_id):
     grp = Group.query.get_or_404(group_id)
-    class_id = grp.class_id
+    subject_id = grp.subject_id  # ✅
     try:
         db.session.delete(grp)
         db.session.commit()
@@ -92,17 +92,17 @@ def delete_group(group_id):
     except Exception as e:
         db.session.rollback()
         flash(f"Error deleting group: {e}", "error")
-    return redirect(url_for("manage_groups", class_id=class_id))
+    return redirect(url_for("manage_groups", subject_id=subject_id))  # ✅
 
 @app.route("/students", methods=["GET", "POST"])
 def manage_students():
-    classes = Class.query.order_by(Class.name).all()
+    subjects = Subject.query.order_by(Subject.name).all()  # ✅
     groups = Group.query.order_by(Group.name).all()
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
         email = (request.form.get("email") or "").strip()
         student_id = (request.form.get("student_id") or "").strip() or None
-        class_id = int(request.form.get("class_id") or 0) or None
+        subject_id = int(request.form.get("subject_id") or 0) or None  # ✅
         group_id = int(request.form.get("group_id") or 0) or None
 
         if not name or not email:
@@ -110,7 +110,7 @@ def manage_students():
         else:
             try:
                 s = Student(name=name, email=email, student_id=student_id,
-                            class_id=class_id, group_id=group_id)
+                            subject_id=subject_id, group_id=group_id)  # ✅
                 db.session.add(s)
                 db.session.commit()
                 flash("Student added", "success")
@@ -120,7 +120,7 @@ def manage_students():
                 flash(f"Error adding student: {e}", "error")
 
     students = Student.query.order_by(Student.name).all()
-    return render_template("students.html", students=students, classes=classes, groups=groups)
+    return render_template("students.html", students=students, subjects=subjects, groups=groups)  # ✅
 
 @app.route("/students/<int:student_id>/delete", methods=["POST"])
 def delete_student(student_id):
@@ -161,7 +161,7 @@ def import_students():
                         continue
                     s = Student(name=name, email=email,
                                 student_id=row.get("student_id") or None,
-                                class_id=int(row.get("class_id")) if row.get("class_id") else None,
+                                subject_id=int(row.get("subject_id")) if row.get("subject_id") else None,  # ✅
                                 group_id=int(row.get("group_id")) if row.get("group_id") else None)
                     db.session.add(s)
                     inserted += 1

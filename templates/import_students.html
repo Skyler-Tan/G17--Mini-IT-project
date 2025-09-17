@@ -2,7 +2,7 @@
 {% block content %}
 <h2>Import Students (CSV)</h2>
 
-<p>Required columns (case-insensitive): <code>name</code>, <code>email</code>. Optional: <code>student_id</code>, <code>class_id</code>, <code>group_id</code>.</p>
+<p>Required columns (case-insensitive): <code>name</code>, <code>email</code>. Optional: <code>student_id</code>, <code>subject_id</code>, <code>group_id</code>.</p>
 
 <form method="post" enctype="multipart/form-data" class="card">
   <input type="file" name="file" accept=".csv" required>
@@ -11,7 +11,7 @@
 
 <details>
   <summary>Sample CSV</summary>
-  <pre>name,email,student_id,class_id,group_id
+  <pre>name,email,student_id,subject_id,group_id
 Ali,ali@example.com,A22CS0001,1,2
 Siti,siti@example.com,A22CS0002,1,
 John,john@example.com,,,
