@@ -1,10 +1,28 @@
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+.page-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* make it take up full viewport height */
+}
+
+.content {
+  flex: 1;
+  padding-bottom: 40px;
+}
+
+/* Footer styles */
 .footer {
-  background: #4169e1;
+  background: #003366;
   color: #fff;
   text-align: center;
   padding: 15px 20px;
-  margin-top: 40px;
   font-size: 14px;
+  width: 100%;
+  margin-top: auto; /* ensures it stays at bottom if content is short */
 }
 
 .footer a {

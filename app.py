@@ -9,6 +9,7 @@ from datetime import datetime
 from flask_migrate import Migrate
 from sqlalchemy import or_
 from sqlalchemy import text
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yoursecretkey'   # change this
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
@@ -35,7 +36,7 @@ class User(UserMixin, db.Model):
     last_name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     username = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)  # hashed password
+    password = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='student')
     gender = db.Column(db.String(20), nullable=False, server_default=text("'Other"))
 
