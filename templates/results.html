@@ -10,64 +10,53 @@
         <p>Results will be available once all 4 students have completed their peer reviews and self-assessments.</p>
     </div>
     {% endif %}
-
-    <!-- Teacher/lecturer-based inputs removed; results now show peer averages only. -->
     
     <div style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-        {% if all_completed and rows %}
         <table class="results-table" style="width: 100%; border-collapse: collapse; text-align: center;">
             <thead style="background-color: #f8f9fa;">
                 <tr>
                     <th style="padding: 10px; border: 1px solid #ddd;">Student</th>
-                    <th style="padding: 10px; border: 1px solid #ddd;">Avg Peer Score</th>
-                    <th style="padding: 10px; border: 1px solid #ddd;">Final Mark</th>
+                    {% if all_completed %}
+                        <th style="padding: 10px; border: 1px solid #ddd;">Avg Peer Score</th>
+                    {% endif %}
                     <th style="padding: 10px; border: 1px solid #ddd;">Peer Comments</th>
                 </tr>
             </thead>
             <tbody>
                 {% for row in rows %}
                 <tr>
-                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>{{ row[0] }}</strong></td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">
-                        <span style="color: #28a745; font-weight: bold;">{{ row[1] }}/5</span>
-                    </td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">
-                        <span style="color: #dc3545; font-weight: bold;">{{ row[2] }}%</span>
-                    </td>
-                    <td style="padding: 10px; border: 1px solid #ddd; text-align: left; max-width: 300px;">
-                        {% if row[3] and row[3] != "No comments" %}
-                            {{ row[3] }}
+                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>{{ row.student_name }}</strong></td>
+                    {% if all_completed %}
+                        <td style="padding: 10px; border: 1px solid #ddd;">
+                            {% if row.avg_peer_score is not none %}
+                                <span style="color: #28a745; font-weight: bold;">{{ row.avg_peer_score }}/5</span>
+                            {% else %}
+                                <em style="color: #999;">N/A</em>
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: left; max-width: 400px;">
+                        {% if row.peer_comments %}
+                            {% for comment in row.peer_comments %}
+                                <div style="margin-bottom: 10px; padding: 8px; background: #f8f9fa; border-left: 3px solid #007bff; border-radius: 4px;">
+                                    <strong>{{ comment.reviewer }}:</strong> {{ comment.comment }}
+                                </div>
+                            {% endfor %}
                         {% else %}
-                            <em style="color: #999;">No comments</em>
+                            {% if current_user == row.student_name and all_completed %}
+                                <em style="color: #999;">No comments received from peers.</em>
+                            {% elif current_user == row.student_name %}
+                                <em style="color: #999;">Comments will appear here once all reviews are completed.</em>
+                            {% else %}
+                                <em style="color: #999;">Comments are private to each student.</em>
+                            {% endif %}
                         {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-        {% else %}
-        {% if all_completed %}
-        <div style="text-align: center; padding: 40px; color: #666;">
-            {% if group_mark and lecturer_eval %}
-                <p>No review data available. Please submit some peer reviews first.</p>
-            {% else %}
-                <p>Enter the group mark and lecturer evaluation above to calculate results.</p>
-            {% endif %}
-        </div>
-        {% endif %}
-        {% endif %}
     </div>
-
-    <!-- Formula explanation -->
-    {% if all_completed and group_mark and lecturer_eval %}
-    <div style="background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 8px; margin: 20px 0;">
-        <strong>Calculation Formula:</strong><br>
-        Final Mark = (Group Mark × 50%) + (Group Mark × 25% × Peer Score/5) + (Group Mark × 25% × Lecturer Eval/5)<br>
-        <small>
-            Using Group Mark: {{ group_mark }}%, Lecturer Evaluation: {{ lecturer_eval }}/5
-        </small>
-    </div>
-    {% endif %}
 
     <!-- Navigation Buttons -->
     <div style="text-align: center; margin-top: 30px;">
@@ -78,18 +67,19 @@
             </button>
         </form>
         
-        <form action="{{ url_for('index') }}" style="display: inline;">
+        <form action="{{ url_for('dashboard') }}" style="display: inline;">
             <button type="submit" class="btn btn-primary"
                     style="background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px;">
-                Start Over
+                Back to Dashboard
             </button>
         </form>
 
-        <!-- Debug link to check database -->
-        <a href="{{ url_for('view_db') }}" target="_blank" 
-           style="display: inline-block; background: #17a2b8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin: 5px;">
-            Inspect Database
-        </a>
+        <form action="{{ url_for('index') }}" style="display: inline;">
+            <button type="submit" class="btn btn-success"
+                    style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px;">
+                Start Over
+            </button>
+        </form>
     </div>
 </div>
 {% endblock %}

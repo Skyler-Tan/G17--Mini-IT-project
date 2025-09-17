@@ -69,7 +69,7 @@ def dashboard():
     total_students = len(students)
     all_completed = all(v['completed'] for v in completion_status.values())
 
-    # Compute peer average results only (no teacher marks anymore)
+    # Compute peer average results only when all students are completed
     results = []
     if all_completed:
         for student in students:
@@ -77,22 +77,16 @@ def dashboard():
             avg_peer_score = (
                 sum(r.score for r in reviews) / len(reviews) if reviews else 0
             )
-            # Keep a 3rd placeholder to satisfy current template; will be removed in template cleanup
-            results.append([student, round(avg_peer_score, 2), "Pending"])  # Final mark no longer uses teacher marks
-
-    # teacher_marks is no longer used; pass None for compatibility with current template
-    teacher_marks = None
-
+            results.append([student, round(avg_peer_score, 2)])
+            
     return render_template(
         "dashboard.html",
         students=students,
         completion_status=completion_status,
         completed_count=completed_count,
         total_students=total_students,
-        all_students_completed=all_completed,
-        teacher_marks=teacher_marks,
-        results=results,
-        # legacy keys removed: db_comparison, student_comparison
+        all_completed=all_completed,
+        results=results
     )
 
 @app.route("/switch_user_and_form/<username>")
@@ -108,72 +102,49 @@ def switch_user_and_form(username):
         flash("Invalid user selected", "error")
         return redirect(url_for("dashboard"))
 
-@app.route("/teacher_input", methods=["POST"])  # kept for compatibility with existing template; does nothing now
-def teacher_input():
-    flash("Teacher inputs have been removed. This project now uses only peer reviews.", "info")
-    return redirect(url_for("dashboard"))
-
-@app.route("/results", methods=["GET", "POST"])
+@app.route("/results")
 def results():
     students = get_students_from_db()
     status = get_completion_status(students)
     all_completed = all(v['completed'] for v in status.values())
-
-    group_mark = None
-    lecturer_eval = None
-    if request.method == "POST":
-        try:
-            gm = request.form.get("group_mark")
-            le = request.form.get("lecturer_eval")
-            group_mark = float(gm) if gm not in (None, "") else None
-            lecturer_eval = float(le) if le not in (None, "") else None
-        except (TypeError, ValueError):
-            group_mark = None
-            lecturer_eval = None
-            flash("Invalid input for group mark or lecturer evaluation.", "error")
+    current_user = session.get("current_user")
 
     rows = []
-    if all_completed and group_mark is not None and lecturer_eval is not None:
-        for student in students:
+    # Always show the results table, but only populate data when all are completed
+    for student in students:
+        if all_completed:
             reviews = PeerReview.query.filter_by(reviewee_name=student).all()
             avg_peer_score = (sum(r.score for r in reviews) / len(reviews)) if reviews else 0
-            comments = "; ".join([r.comment for r in reviews if r.comment]) if reviews else "No comments"
-            final_mark = (
-                (group_mark * 0.5)
-                + (group_mark * 0.25 * (avg_peer_score / 5.0))
-                + (group_mark * 0.25 * (lecturer_eval / 5.0))
-            )
-            rows.append([student, round(avg_peer_score, 2), round(final_mark, 2), comments if comments else "No comments"])
+            
+            # Get comments from other students about this student (only visible to the current student)
+            peer_comments = []
+            if current_user == student:  # Only show comments if viewing your own results
+                for review in reviews:
+                    if review.comment and review.comment.strip():
+                        peer_comments.append({
+                            'reviewer': review.reviewer_name,
+                            'comment': review.comment
+                        })
+            
+            rows.append({
+                'student_name': student,
+                'avg_peer_score': round(avg_peer_score, 2),
+                'peer_comments': peer_comments
+            })
+        else:
+            # Empty row structure when not all completed
+            rows.append({
+                'student_name': student,
+                'avg_peer_score': None,
+                'peer_comments': []
+            })
 
     return render_template(
         "results.html",
         all_completed=all_completed,
-        group_mark=group_mark,
-        lecturer_eval=lecturer_eval,
         rows=rows,
+        current_user=current_user
     )
-
-@app.route("/view_db")
-def view_db():
-    try:
-        review_count = PeerReview.query.count()
-        assessment_count = SelfAssessment.query.count()
-        anon_count = AnonymousReview.query.count()
-        try:
-            from sqlalchemy import text
-            users_count = db.session.execute(text("SELECT COUNT(*) FROM user")).scalar() or 0
-        except Exception:
-            users_count = 0
-        html_out = "<h2>Database Overview</h2>"
-        html_out += f"<p>Users: {users_count}</p>"
-        html_out += f"<p>Peer Reviews: {review_count}</p>"
-        html_out += f"<p>Self Assessments: {assessment_count}</p>"
-        html_out += f"<p>Anonymous Reviews: {anon_count}</p>"
-        html_out += '<p><a href="/dashboard">Back to Dashboard</a></p>'
-        return html_out
-    except Exception:
-        app.logger.exception("Error rendering DB overview")
-        return '<p>Error rendering DB overview. Check logs.</p>'
 
 @app.route("/form", methods=["GET", "POST"])
 def form():
@@ -226,12 +197,12 @@ def form():
                 db.session.add(anon)
 
             db.session.commit()
-            flash("Peer reviews submitted.", "success")
+            flash("Peer reviews submitted successfully.", "success")
             return redirect(url_for("self_assessment"))
-        except Exception:
+        except Exception as e:
             db.session.rollback()
             app.logger.exception("Error saving peer reviews")
-            flash("An error occurred while saving your reviews.", "error")
+            flash(f"An error occurred while saving your reviews: {str(e)}", "error")
             return redirect(url_for("form"))
 
     # GET: Pre-fill prior reviews if any
@@ -240,7 +211,12 @@ def form():
     for r in existing:
         prior_reviews[r.reviewee_name] = {"score": r.score, "comment": r.comment}
 
-    return render_template("form.html", current_user=current_user, prior_reviews=prior_reviews, students=students_list)
+    return render_template(
+        "form.html", 
+        current_user=current_user, 
+        prior_reviews=prior_reviews, 
+        students=students_list
+    )
 
 @app.route("/self_assessment", methods=["GET", "POST"])
 def self_assessment():
@@ -274,15 +250,27 @@ def self_assessment():
             db.session.add(assessment)
             db.session.commit()
 
-            flash("Self assessment submitted.", "success")
+            flash("Self assessment submitted successfully.", "success")
             return redirect(url_for("done"))
-        except Exception:
+        except Exception as e:
             db.session.rollback()
             app.logger.exception("Error saving self assessment")
-            flash("An error occurred while saving your self assessment.", "error")
+            flash(f"An error occurred while saving your self assessment: {str(e)}", "error")
             return redirect(url_for("self_assessment"))
 
-    return render_template("self_assessment.html")
+    # Pre-fill existing self assessment data when editing
+    existing_assessment = SelfAssessment.query.filter_by(student_name=current_user).first()
+    assessment_data = {}
+    if existing_assessment:
+        assessment_data = {
+            'summary': existing_assessment.summary,
+            'challenges': existing_assessment.challenges,
+            'different': existing_assessment.different,
+            'role': existing_assessment.role,
+            'feedback': existing_assessment.feedback or ''
+        }
+
+    return render_template("self_assessment.html", current_user=current_user, assessment_data=assessment_data)
 
 @app.route("/done")
 def done():

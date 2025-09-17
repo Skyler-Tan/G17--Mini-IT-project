@@ -32,13 +32,11 @@
         {% endfor %}
     </div>
 
-    <!-- Teacher controls removed: system now uses peer reviews only -->
-
     <!-- Results Preview -->
     <div style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
         <h3 style="margin-bottom: 15px;">Results Preview</h3>
         
-        {% if all_students_completed %}
+        {% if all_completed %}
             <!-- Show peer averages only -->
             <div style="color: #28a745; margin-bottom: 15px;">
                 <strong>✓ All students completed reviews</strong>
@@ -75,11 +73,7 @@
     <div style="text-align: center; margin-top: 20px;">
         <a href="{{ url_for('results') }}" 
            style="background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin: 5px;">
-            Advanced Results View
-        </a>
-        <a href="{{ url_for('view_db') }}" 
-           style="background: #17a2b8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin: 5px;">
-            View Database
+            Results 
         </a>
     </div>
 </div>

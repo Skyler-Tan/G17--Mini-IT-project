@@ -31,6 +31,11 @@
             Take time to honestly assess on your group work experience. Your responses will help improve
             future collaborations and provide valuable insights for both you and your instructors.
         </p>
+        {% if prior_assessment %}
+            <div style="margin-top: 10px; padding: 8px; background: #fff3cd; border-radius: 4px; color: #856404;">
+                <small><strong>Note:</strong> You are editing your previous self-assessment. Your existing responses are shown below.</small>
+            </div>
+        {% endif %}
     </div>
     
     <form action="{{ url_for('self_assessment') }}" method="POST">
@@ -49,32 +54,32 @@
 
         <div class="form-group">
             <label><strong>1. Write a brief summary of your contribution to the project:</strong></label>
-            <textarea name="summary" rows="4" class="input-area" required placeholder="Describe what you contributed to the group project..."></textarea>
+            <textarea name="summary" rows="4" class="input-area" required placeholder="Describe what you contributed to the group project...">{{ prior_assessment.summary if prior_assessment else '' }}</textarea>
         </div>
 
         <div class="form-group">
             <label><strong>2. What challenges did you face and what have you learned?</strong></label>
-            <textarea name="challenges" rows="4" class="input-area" required placeholder="Describe the challenges you encountered and lessons learned..."></textarea>
+            <textarea name="challenges" rows="4" class="input-area" required placeholder="Describe the challenges you encountered and lessons learned...">{{ prior_assessment.challenges if prior_assessment else '' }}</textarea>
         </div>
 
         <div class="form-group">
             <label><strong>3. What would you do differently if you could start over?</strong></label>
-            <textarea name="different" rows="4" class="input-area" required placeholder="Reflect on what you would change or improve..."></textarea>
+            <textarea name="different" rows="4" class="input-area" required placeholder="Reflect on what you would change or improve...">{{ prior_assessment.different if prior_assessment else '' }}</textarea>
         </div>
 
         <div class="form-group">
             <label><strong>4. Describe your role in the group and how it helped the team:</strong></label>
-            <textarea name="role" rows="4" class="input-area" required placeholder="What was your primary role and how did it benefit the group..."></textarea>
+            <textarea name="role" rows="4" class="input-area" required placeholder="What was your primary role and how did it benefit the group...">{{ prior_assessment.role if prior_assessment else '' }}</textarea>
         </div>
 
         <div class="form-group">
             <label><strong>5. Additional feedback or comments (optional):</strong></label>
-            <textarea name="feedback" rows="4" class="input-area" placeholder="Any other thoughts or feedback..."></textarea>
+            <textarea name="feedback" rows="4" class="input-area" placeholder="Any other thoughts or feedback...">{{ prior_assessment.feedback if prior_assessment else '' }}</textarea>
         </div>
 
         <div style="text-align:center; margin-top: 30px;">
             <button type="submit" class="submit-btn">
-                Complete Assessment
+                {% if prior_assessment %}Update Assessment{% else %}Complete Assessment{% endif %}
             </button>
         </div>
     </form>

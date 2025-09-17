@@ -35,6 +35,11 @@
             <li>Be honest and fair in your evaluations</li>
             <li>You will complete a self-assessment after this step</li>
         </ul>
+        {% if prior_reviews %}
+            <div style="margin-top: 10px; padding: 8px; background: #fff3cd; border-radius: 4px; color: #856404;">
+                <small><strong>Note:</strong> You are editing your previous reviews. Your existing responses are shown below.</small>
+            </div>
+        {% endif %}
     </div>
 
     <form method="POST" action="{{ url_for('form') }}">
@@ -44,7 +49,12 @@
             {% if student != current_user %}
                 {% set student_index = loop.index0 %}
                 <div class="review-item" style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <h4 style="margin-top: 0; color: #333;">Review {{ review_count }}: {{ student }}</h4>
+                    <h4 style="margin-top: 0; color: #333;">
+                        Review {{ review_count }}: {{ student }}
+                        {% if prior_reviews.get(student) %}
+                            <span style="color: #28a745; font-size: 14px; font-weight: normal;">✓ Previously reviewed</span>
+                        {% endif %}
+                    </h4>
                     
                     <!-- Hidden fields to track reviewee and score (score synced from radios) -->
                     <input type="hidden" name="reviewee[]" value="{{ student }}">
@@ -58,7 +68,9 @@
                             {% for score in range(1, 6) %}
                                 <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
                                     <input type="radio" name="score_{{ student_index }}" value="{{ score }}" required 
-                                           style="margin-right: 5px; transform: scale(1.2);" onchange="document.getElementById('score_val_{{ student_index }}').value=this.value;" {% if prior_reviews.get(student) and prior_reviews.get(student).get('score') == score %}checked{% endif %}>
+                                           style="margin-right: 5px; transform: scale(1.2);" 
+                                           onchange="document.getElementById('score_val_{{ student_index }}').value=this.value;" 
+                                           {% if prior_reviews.get(student) and prior_reviews.get(student).get('score') == score %}checked{% endif %}>
                                     <span style="{% if score <= 2 %}color: #dc3545;{% elif score <= 3 %}color: #ffc107;{% else %}color: #28a745;{% endif %}">
                                         {{ score }}
                                     </span>
@@ -87,15 +99,15 @@
         <!-- Anonymous group feedback -->
         <div style="background:#f8f9fa;border:1px solid #ddd;border-radius:10px;padding:20px;margin-top:10px;">
             <label style="display:block;margin-bottom:8px;font-weight:bold;color:#555;">Anonymous feedback to the group (optional):</label>
-            <textarea name="anonymous_review" rows="3" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;" placeholder="Anything you want to say anonymously to the entire group..."></textarea>
-            <small style="color:#6c757d;display:block;margin-top:5px;">This feedback is stored without your name.</small>
+            <textarea name="anonymous_review" rows="3" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;" placeholder="Anything you want to say anonymously to the entire group...">{{ prior_anon_review if prior_anon_review else '' }}</textarea>
+            <small style="color:#6c757d;display:block;margin-top:5px;">This feedback is stored without your name and cannot be retrieved for editing later.</small>
         </div>
 
         <div style="text-align: center; margin-top: 30px;">
             <button type="submit" style="background: #28a745; color: white; padding: 12px 30px; 
                                          border: none; border-radius: 6px; cursor: pointer; font-size: 16px;
-                                         transition: background-color 0.3s;">
-                Submit Peer Reviews
+                                         transition: all 0.3s;">
+                {% if prior_reviews %}Update Peer Reviews{% else %}Submit Peer Reviews{% endif %}
             </button>
             <br>
             <small style="color: #6c757d; margin-top: 10px; display: block;">
@@ -106,7 +118,7 @@
 
     <!-- Navigation -->
     <div style="text-align: center; margin-top: 20px;">
-        <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+        <a href="{{ url_for('dashboard') }}" style="color: #6c757d; text-decoration: none;">← Back to Dashboard</a>
     </div>
 </div>
 
@@ -116,6 +128,10 @@ button:hover {
     transform: translateY(-1px);
 }
 
+.review-item {
+    transition: all 0.3s;
+}
+
 .review-item:hover {
     border-color: #007bff;
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
@@ -123,6 +139,17 @@ button:hover {
 
 input[type="radio"]:checked + span {
     font-weight: bold;
+}
+
+textarea:focus, input:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* Visual indicator for completed reviews */
+.review-item:has(input[type="radio"]:checked) {
+    border-left: 4px solid #28a745;
 }
 </style>
 {% endblock %}
