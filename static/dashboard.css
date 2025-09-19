@@ -63,42 +63,56 @@ body {
 /* Cards section */
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
+  margin-top: 20px;
 }
 
 .card {
-  background: #dfdcdc;
-  padding: 1.5rem;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  transition: transform 0.2s;
+  position: relative;
+  border-radius: 15px;
+  height: 180px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.2s ease-in-out;
 }
 
 .card:hover {
   transform: translateY(-5px);
 }
 
+.card a {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-decoration: none;
+  color: white;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.6); /* dark overlay for readability */
+  text-align: center;
+  font-size: 16px;
+  transition: background 0.3s;
+}
+
+.card a:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
 .card h3 {
-  color: #cc0000;
+  color: #131313;
   margin-bottom: 10px;
 }
 
 .card p {
   font-size: 14px;
   margin-bottom: 15px;
-  color: #555;
+  color: #ece8e8;
 }
 
-.card button {
-  padding: 10px 15px;
-  background: #003366;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
 
 .card button:hover {
   background: #cc0000;
