@@ -17,11 +17,32 @@
   <h1>Peer Review App</h1>
   <h2>Welcome, {{ prefix }} {{ user.first_name }}!</h2>
 
+  <h2>Courses</h2>
   <section class="cards">
+    <div class="card">
+      <h3>Academic English</h3>
+      <p>Check the reviews done by students.</p>
+      <button onclick="window.location.href='{{ url_for('profile') }}'">Open</button>
+    </div>
+    <div class="card">
+      <h3>Principles of Physics</h3>
+      <p>Check the reviews done by students.</p>
+      <button onclick="window.location.href='{{ url_for('profile') }}'">Open</button>
+    </div>
+    <div class="card">
+      <h3>Mathematics</h3>
+      <p>Check the reviews done by students.</p>
+      <button onclick="window.location.href='{{ url_for('profile') }}'">Open</button>
+    </div>
+    <div class="card">
+      <h3>Assign Group</h3>
+      <p>Assign group to students.</p>
+      <button onclick="window.location.href='{{ url_for('profile') }}'">Open</button>
+    </div>
     <div class="card">
       <h3>Profile</h3>
       <p>View and edit your personal details.</p>
-      <button onclick="window.location.href='{{ url_for('lecturer_profile') }}'">Open</button>
+      <button onclick="window.location.href='{{ url_for('student_profile') }}'">Open</button>
     </div>
     <div class="card">
       <h3>Change Password</h3>
