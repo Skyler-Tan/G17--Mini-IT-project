@@ -1,4 +1,11 @@
 {% extends "layout.html" %}
+
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='subject.css') }}">
+{% endblock %}
+
+
 {% block content %}
 <h2>Subjects</h2>
 
@@ -8,8 +15,9 @@
   <button type="submit">Create Subject</button>
 </form>
 
-<table>
-  <thead><tr><th>ID</th><th>Name</th><th>Groups</th><th>Actions</th></tr></thead>
+<div class="table-container">
+ <table>
+   <thead><tr><th>ID</th><th>Name</th><th>Groups</th><th>Actions</th></tr></thead>
   <tbody>
     {% for s in subjects %}
       <tr>
@@ -22,7 +30,9 @@
           </form>
         </td>
       </tr>
+
     {% endfor %}
   </tbody>
-</table>
+ </table>
+</div>
 {% endblock %}
