@@ -11,7 +11,7 @@
             </div>
         </div>
         
-        <h2 style="color: #28a745; margin-bottom: 15px;">Review Complete! 🎉</h2>
+        <h2 style="color: #28a745; margin-bottom: 15px;">Review Complete!</h2>
         
         {% if current_user %}
             <p style="color: #6c757d; margin-bottom: 25px;">
@@ -22,7 +22,7 @@
         <!-- Completion Summary -->
         <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 25px 0; 
                     border-left: 4px solid #28a745;">
-            <strong style="color: #155724; display: block; margin-bottom: 10px;">✅ Completed Tasks:</strong>
+            <strong style="color: #155724; display: block; margin-bottom: 10px;">✓ Completed Tasks:</strong>
             <div style="font-size: 14px; color: #155724;">
                 ✓ Peer Reviews Submitted<br>
                 ✓ Self Assessment Completed
@@ -32,7 +32,7 @@
         <!-- Next Steps -->
         <div style="background: #e8f4fd; padding: 20px; border-radius: 10px; margin: 25px 0; 
                     border-left: 4px solid #007bff;">
-            <strong style="color: #004085; display: block; margin-bottom: 10px;">ℹ️ Next Steps:</strong>
+            <strong style="color: #004085; display: block; margin-bottom: 10px;">Next Steps:</strong>
             <div style="font-size: 14px; color: #004085;">
                 • Wait for all team members to complete their reviews<br>
                 • Results will be available once everyone is finished<br>
@@ -46,13 +46,13 @@
                style="display: inline-block; background: #007bff; color: white; padding: 12px 25px; 
                       text-decoration: none; border-radius: 8px; margin: 5px; font-weight: bold;
                       transition: all 0.3s;">
-                📊 View Dashboard
+                View Dashboard
             </a>
             <a href="{{ url_for('results') }}" 
                style="display: inline-block; background: #28a745; color: white; padding: 12px 25px; 
                       text-decoration: none; border-radius: 8px; margin: 5px; font-weight: bold;
                       transition: all 0.3s;">
-                📈 Check Results
+                Check Results
             </a>
         </div>
         
@@ -60,11 +60,11 @@
         <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #eee;">
             <a href="{{ url_for('form') }}" 
                style="color: #6c757d; text-decoration: none; font-size: 14px; margin-right: 15px;">
-                ✏️ Edit My Reviews
+                Edit My Reviews
             </a>
             <a href="{{ url_for('index') }}" 
                style="color: #6c757d; text-decoration: none; font-size: 14px;">
-                🔄 Start New Review
+                Start New Review
             </a>
         </div>
         
