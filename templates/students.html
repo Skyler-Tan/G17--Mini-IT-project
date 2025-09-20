@@ -1,57 +1,68 @@
 {% extends "layout.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='students.css') }}">
+{% endblock %}
+
 {% block content %}
 <h2>Students</h2>
 
-<form method="post" class="card">
-  <div class="grid">
-    <div>
-      <label>Student ID (optional)</label>
-      <input name="student_id" placeholder="A22CS0001">
+<div class="student-page">
+  <!-- Form on the left -->
+  <form method="post" class="card">
+    <div class="grid">
+      <div>
+        <label>Student ID (optional)</label>
+        <input name="student_id" placeholder="A22CS0001">
+      </div>
+      <div>
+        <label>Name</label>
+        <input name="name" required>
+      </div>
+      <div>
+        <label>Email</label>
+        <input name="email" type="email" required>
+      </div>
+      <div>
+        <label>Subject (optional)</label>
+        <select name="subject_id">
+          <option value="">— None —</option>
+          {% for subj in subjects %}<option value="{{ subj.id }}">{{ subj.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Group (optional)</label>
+        <select name="group_id">
+          <option value="">— None —</option>
+          {% for g in groups %}<option value="{{ g.id }}">{{ g.name }} (subject {{ g.subject_id }})</option>{% endfor %}
+        </select>
+      </div>
     </div>
-    <div>
-      <label>Name</label>
-      <input name="name" required>
-    </div>
-    <div>
-      <label>Email</label>
-      <input name="email" type="email" required>
-    </div>
-    <div>
-      <label>Subject (optional)</label>
-      <select name="subject_id">
-        <option value="">— None —</option>
-        {% for subj in subjects %}<option value="{{ subj.id }}">{{ subj.name }}</option>{% endfor %}
-      </select>
-    </div>
-    <div>
-      <label>Group (optional)</label>
-      <select name="group_id">
-        <option value="">— None —</option>
-        {% for g in groups %}<option value="{{ g.id }}">{{ g.name }} (subject {{ g.subject_id }})</option>{% endfor %}
-      </select>
-    </div>
-  </div>
-  <button type="submit">Add Student</button>
-</form>
+    <button type="submit">Add Student</button>
+  </form>
 
-<table>
-  <thead><tr><th>ID</th><th>StdID</th><th>Name</th><th>Email</th><th>Subject</th><th>Group</th><th>Actions</th></tr></thead>
-  <tbody>
-    {% for s in students %}
-      <tr>
-        <td>{{ s.id }}</td>
-        <td>{{ s.student_id or '-' }}</td>
-        <td>{{ s.name }}</td>
-        <td>{{ s.email }}</td>
-        <td>{{ s.subject.name if s.subject else '-' }}</td>
-        <td>{{ s.group.name if s.group else '-' }}</td>
-        <td>
-          <form method="post" action="{{ url_for('delete_student', student_id=s.id) }}" onsubmit="return confirm('Remove student?');">
-            <button type="submit">Delete</button>
-          </form>
-        </td>
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
+  <!-- Table on the right -->
+  <div class="student-table">
+    <table>
+      <thead><tr><th>ID</th><th>StdID</th><th>Name</th><th>Email</th><th>Subject</th><th>Group</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for s in students %}
+          <tr>
+            <td>{{ s.id }}</td>
+            <td>{{ s.student_id or '-' }}</td>
+            <td>{{ s.name }}</td>
+            <td>{{ s.email }}</td>
+            <td>{{ s.subject.name if s.subject else '-' }}</td>
+            <td>{{ s.group.name if s.group else '-' }}</td>
+            <td>
+              <form method="post" action="{{ url_for('delete_student', student_id=s.id) }}" onsubmit="return confirm('Remove student?');">
+                <button type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}
