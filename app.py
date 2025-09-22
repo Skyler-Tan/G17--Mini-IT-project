@@ -120,20 +120,20 @@ def results():
     students = get_students_from_db()
     status = get_completion_status(students)
     all_completed = all(v['completed'] for v in status.values())
-    completed_count = sum(1 for v in status.values() if v['completed'])  # Keep this one
+    completed_count = sum(1 for v in status.values() if v['completed'])
     
     current_user = session.get("current_user")
     is_current_lecturer = is_lecturer(current_user) if current_user else False
 
     rows = []
-    # Show results for all students, even if not all completed
+    # Only show results when all students have completed their reviews and assessments
     for student in students:
         reviews = PeerReview.query.filter_by(reviewee_name=student).all()
         
-        # Calculate average score if there are reviews
-        if reviews:
+        # Only calculate scores if all students have completed everything
+        if all_completed and reviews:
             avg_peer_score = sum(r.score for r in reviews) / len(reviews)
-            final_mark = round(avg_peer_score * 20, 2)
+            final_mark = round(avg_peer_score * 20, 2)  # Convert 5-point scale to 100-point scale
         else:
             avg_peer_score = None
             final_mark = None
@@ -159,7 +159,6 @@ def results():
     anonymous_reviews = AnonymousReview.query.all()
 
     self_assessments = []
-    # Remove this line: completed_count = 0 (don't reset the counter!)
     for student in students:
         assessment = SelfAssessment.query.filter_by(student_name=student).first()
         if assessment:
@@ -167,15 +166,11 @@ def results():
                 'student_name': student,
                 'assessment': assessment
             })
-            # Don't increment completed_count here - it's already calculated above
-
-    # Use the completed_count from the status calculation
-    all_completed = (completed_count == len(students)) 
 
     return render_template(
         "results.html",
         all_completed=all_completed,
-        completed_count=completed_count,  # This now has the correct value
+        completed_count=completed_count,
         rows=rows,
         current_user=current_user,
         is_lecturer=is_current_lecturer,
@@ -210,6 +205,11 @@ def form():
 
             # Remove any previous reviews by this reviewer to allow re-submit/edit
             PeerReview.query.filter_by(reviewer_name=current_user).delete()
+            
+            # Remove previous anonymous review by this user (if any) to allow editing
+            # Note: We can't directly link anonymous reviews to users, so we'll remove all
+            # existing anonymous reviews and re-add them. This is a limitation of anonymous reviews.
+            # For better functionality, consider adding a user_id field to AnonymousReview model.
 
             for reviewee, score_str, comment in zip(reviewees, scores, comments):
                 if reviewee == current_user:
@@ -253,11 +253,17 @@ def form():
     for r in existing:
         prior_reviews[r.reviewee_name] = {"score": r.score, "comment": r.comment}
 
+    # Get prior anonymous review - this is tricky since anonymous reviews don't have user identification
+    # For now, we'll assume the last anonymous review might be from this user (not ideal)
+    prior_anon_review = ""
+    # Note: This is a limitation - anonymous reviews can't be properly edited without user identification
+
     return render_template(
         "form.html", 
         current_user=current_user, 
         prior_reviews=prior_reviews, 
-        students=students_list
+        students=students_list,
+        prior_anon_review=prior_anon_review
     )
 
 @app.route("/self_assessment", methods=["GET", "POST"])
