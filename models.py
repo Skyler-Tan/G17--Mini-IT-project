@@ -10,25 +10,25 @@ class User(UserMixin, db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.String(64), nullable=True, unique=False)  # optional, only for students
+    id_number = db.Column(db.String(64), nullable=True, unique=False)  # optional, only for students
     first_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(20), nullable=False, default="student")  # "student" or "teacher"
+    role = db.Column(db.String(20), nullable=False, default="student")  # "student" or "lecturer"
     gender = db.Column(db.String(20), nullable=False, server_default=text("'Other'"))
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
-    subjects = db.relationship("Subject", backref="teacher", lazy="selectin")  # if teacher
+    subjects = db.relationship("Subject", backref="lecturer", lazy="selectin")  # was teacher
     memberships = db.relationship("GroupMember", backref="student_user", lazy="selectin")  # if student
     given_reviews = db.relationship("PeerReview", foreign_keys="PeerReview.reviewer_id", backref="reviewer_user")
     received_reviews = db.relationship("PeerReview", foreign_keys="PeerReview.reviewee_id", backref="reviewee_user")
 
     def __repr__(self):
-        return f"<User id={self.id} username={self.username} role={self.role}>"
+        return f"<User id={self.id} username={self.username} role={self.role} id_number={self.id_number}>"
 
 
 # ---------------- SUBJECT & GROUP ---------------- #
@@ -39,7 +39,7 @@ class Subject(db.Model):
     name = db.Column(db.String(120), nullable=False, unique=True)
     code = db.Column(db.String(50), unique=True, nullable=True)
 
-    teacher_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    lecturer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
     groups = db.relationship("Group", backref="subject", cascade="all, delete", lazy="selectin")
     settings = db.relationship("Setting", backref="subject", uselist=False, cascade="all, delete")
@@ -71,7 +71,7 @@ class GroupMember(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id", ondelete="CASCADE"), nullable=False)
-    student_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    id_number = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     joined_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
