@@ -62,4 +62,8 @@ body {
 .flash.success { background-color: #28a745; color: white; }  
 .flash.danger  { background-color: #dc3545; color: white; }  
 .flash.info    { background-color: #17a2b8; color: white; }  
+<<<<<<< HEAD
 .flash.warning { background-color: #ffc107; color: black; }  
+=======
+.flash.warning { background-color: #ffc107; color: black; }  
+>>>>>>> Tan

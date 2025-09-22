@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 0 auto; padding: 20px;">
+    <center><h2>Peer Review Dashboard</h2></center>
+    <br>
+
+    <!-- Students Section -->
+    <div style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+        <h3 style="margin-bottom: 20px; color: #333;">Students</h3>
+        
+        {% for student in students %}
+        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+            <!-- Student Button -->
+            <a href="{{ url_for('switch_user_and_form', username=student.replace(' ', '_')) }}" 
+               style="text-decoration: none;">
+                <div style="background: #f8f9fa; border: 2px solid #333; border-radius: 15px; padding: 15px 20px; width: 200px; text-align: center; cursor: pointer; transition: all 0.3s;">
+                    <strong style="color: #333;">{{ student }}</strong>
+                </div>
+            </a>
+            
+            <!-- Completion Checkmark: show only when peer reviews are submitted -->
+            <div style="margin-left: 20px;">
+                {% if completion_status[student]['reviews_count'] > 0 %}
+                    <svg width="30" height="30" style="color: #28a745;">
+                        <path d="M5 15 L12 22 L25 8" stroke="#28a745" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                {% else %}
+                    <div style="width: 30px; height: 30px; border: 2px solid #ddd; border-radius: 50%; background: #f8f9fa;"></div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Results Preview -->
+    <div style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+        <h3 style="margin-bottom: 15px;">Results Preview</h3>
+        
+        {% if all_completed %}
+            <!-- Show peer averages only -->
+            <div style="color: #28a745; margin-bottom: 15px;">
+                <strong>✓ All students completed reviews</strong>
+            </div>
+            
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead style="background: #f8f9fa;">
+                    <tr>
+                        <th style="padding: 10px; border: 1px solid #ddd;">Student</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">Avg Peer Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>{{ result[0] }}</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd; color: #28a745;">{{ result[1] }}/5</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div style="color: #dc3545; text-align: center; padding: 20px;">
+                <strong>⏳ Waiting for all students to complete their reviews</strong>
+                <br>
+                <small style="color: #666;">
+                    Completed: {{ completed_count }}/{{ total_students }} students
+                </small>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Navigation -->
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="{{ url_for('results') }}" 
+           style="background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin: 5px;">
+            Results 
+        </a>
+    </div>
+</div>
+
+<style>
+/* Hover effects for student buttons */
+a div:hover {
+    background: #e9ecef !important;
+    border-color: #007bff !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+}
+</style>
+{% endblock %}

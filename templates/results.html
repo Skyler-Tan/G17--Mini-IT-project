@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+    <h2 style="text-align: center;">Peer Review Results</h2>
+    <br>
+    
+    <!-- TABLE 1: MAIN RESULTS TABLE -->
+    <div style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px;">
+        <table class="results-table" style="width: 100%; border-collapse: collapse; text-align: center;">
+            <caption style="caption-side: top; text-align: left; padding: 8px 0; color: #6c757d;">Peer Review Results</caption>
+            <thead style="background-color: #f8f9fa;">
+                <tr>
+                    <th scope="col" style="padding: 10px; border: 1px solid #ddd;">Student</th>
+                    <th scope="col" style="padding: 10px; border: 1px solid #ddd;">Avg Peer Score</th>
+                    <th scope="col" style="padding: 10px; border: 1px solid #ddd;">Final Mark</th>
+                    <th scope="col" style="padding: 10px; border: 1px solid #ddd;">Peer Comments</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                {% set student_name = row.get('student_name', '') %}
+                {% set avg_peer_score = row.get('avg_peer_score') %}
+                {% set final_mark = row.get('final_mark') %}
+                {% set peer_comments = row.get('peer_comments') %}
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>{{ student_name|e }}</strong></td>
+                    {% if all_completed %}
+                        <td style="padding: 10px; border: 1px solid #ddd;">
+                            {% if avg_peer_score is not none %}
+                                <span style="color: #28a745; font-weight: bold;">{{ avg_peer_score|float|round(2) }}/5</span>
+                            {% else %}
+                                <em style="color: #999;">N/A</em>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">
+                            {% if final_mark is not none %}
+                                <span style="color: #007bff; font-weight: bold;">{{ final_mark|int }}/100</span>
+                            {% else %}
+                                <em style="color: #999;">N/A</em>
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: left; max-width: 400px;">
+                        {% if current_user == student_name or current_user == "Lecturer" %}
+                            {% if all_completed %}
+                                {% if peer_comments %}
+                                    {% for comment in peer_comments %}
+                                        <div style="margin-bottom: 10px; padding: 8px; background: #f8f9fa; border-left: 3px solid #007bff; border-radius: 4px;">
+                                            <strong>{{ comment.reviewer|e }}:</strong> <span style="white-space: pre-wrap; overflow-wrap: anywhere;">{{ comment.comment|e|replace('\n','<br>')|safe }}</span>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <em style="color: #999;">No comments received from peers.</em>
+                                {% endif %}
+                            {% else %}
+                                <em style="color: #999;">Comments will appear once all reviews are completed.</em>
+                    <td style="padding: 10px; border: 1px solid #ddd;">
+                        {% if avg_peer_score is not none %}
+                            <span style="color: #28a745; font-weight: bold;">{{ avg_peer_score }}/5</span>
+                        {% else %}
+                            <em style="color: #999;">N/A</em>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">
+                        {% if final_mark is not none %}
+                            <span style="color: #007bff; font-weight: bold;">{{ final_mark|int }}/100</span>
+                        {% else %}
+                            <em style="color: #999;">N/A</em>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: left; max-width: 400px;">
+                        {% if current_user == student_name or current_user == "Lecturer" %}
+                            {% if peer_comments %}
+                                {% for comment in peer_comments %}
+                                    <div style="margin-bottom: 10px; padding: 8px; background: #f8f9fa; border-left: 3px solid #007bff; border-radius: 4px;">
+                                        <strong>{{ comment.reviewer|e }}:</strong> <span style="white-space: pre-wrap; overflow-wrap: anywhere;">{{ comment.comment|e|replace('\n','<br>')|safe }}</span>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <em style="color: #999;">No comments received from peers.</em>
+                            {% endif %}
+                        {% else %}
+                            <em style="color: #999;">Comments are private to each student.</em>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if rows|length == 0 %}
+                <tr><td colspan="{{ 3 if not all_completed else 4 }}" style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #999; font-style: italic;">No records available</td></tr>
+                <tr><td colspan="4" style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #999; font-style: italic;">No records available</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- TABLE 2: WAITING FOR SUBMISSION (SINGLE LINE) -->
+    {% if not all_completed %}
+    <div style="background: #fff3cd; border: 1px solid #ffeeba; border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: center;">
+        <span style="color: #856404; font-weight: bold;">Waiting for all students to complete their reviews and self-assessments</span>
+    <!-- TABLE 2: PROGRESS INDICATOR -->
+    {% if not all_completed %}
+    <div style="background: #fff3cd; border: 1px solid #ffeeba; border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: center;">
+        <span style="color: #856404; font-weight: bold;">Progress: {{ completed_count }}/4 students completed reviews</span>
+    </div>
+    {% else %}
+    <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: center;">
+        <span style="color: #155724; font-weight: bold;">✓ All students have completed their reviews</span>
+    </div>
+    {% endif %}
+
+    <!-- TABLE 3: ANONYMOUS REVIEW -->
+    <div style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+        <h3 style="margin: 0 0 15px 0; text-align: center; font-weight: bold; color: #333;">Anonymous Review</h3>
+        {% if current_user == "Lecturer" %}
+            {% if all_completed %}
+                {% if anonymous_reviews %}
+                    {% for anon_review in anonymous_reviews %}
+                    <div style="padding: 15px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px;">
+                        <strong style="color: #6c757d;">Anonymous:</strong> 
+                        <span style="color: #495057; white-space: pre-wrap; overflow-wrap: anywhere;">{{ anon_review.content|e|replace('\n','<br>')|safe }}</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="padding: 15px; text-align: center; color: #999; font-style: italic;">
+                        No anonymous reviews submitted
+                    </div>
+                {% endif %}
+            {% else %}
+                <div style="padding: 15px; text-align: center; color: #999; font-style: italic;">
+                    Anonymous reviews will appear once all reviews are completed
+            {% if anonymous_reviews %}
+                {% for anon_review in anonymous_reviews %}
+                <div style="padding: 15px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px;">
+                    <strong style="color: #6c757d;">Anonymous:</strong> 
+                    <span style="color: #495057; white-space: pre-wrap; overflow-wrap: anywhere;">{{ anon_review.content|e|replace('\n','<br>')|safe }}</span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div style="padding: 15px; text-align: center; color: #999; font-style: italic;">
+                    No anonymous reviews submitted yet
+                </div>
+            {% endif %}
+        {% else %}
+            <div style="padding: 15px; text-align: center; color: #999; font-style: italic;">
+                Anonymous reviews are visible to the lecturer only.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- TABLE 4: SELF ASSESSMENT -->
+    <div style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+        <h3 style="margin: 0 0 20px 0; text-align: center; font-weight: bold; color: #333;">SELF ASSESSMENT</h3>
+        
+        {% if all_completed %}
+            {% if self_assessments %}
+                {% for assessment_data in self_assessments %}
+                    {% set assessment = assessment_data.assessment %}
+                    {% set student_name = assessment_data.student_name %}
+                    
+                    <!-- Show assessment if user is the student themselves or lecturer -->
+                    {% if current_user == student_name or current_user == "Lecturer" %}
+                    <div style="margin-bottom: 25px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                        <div style="background: #e9ecef; padding: 10px 15px; border-bottom: 1px solid #ddd;">
+                            <strong style="color: #495057;">{{ student_name }}</strong>
+                        </div>
+                        <div style="padding: 15px;">
+                            <div style="margin-bottom: 12px; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">
+                                <strong>1. Summary of contribution:</strong>
+                                <p style="margin: 5px 0 0 0; color: #495057; white-space: pre-wrap; overflow-wrap: anywhere;">{{ assessment.summary|e|replace('\n','<br>')|safe }}</p>
+                            </div>
+                            <div style="margin-bottom: 12px; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">
+                                <strong>2. Challenges and learning:</strong>
+                                <p style="margin: 5px 0 0 0; color: #495057; white-space: pre-wrap; overflow-wrap: anywhere;">{{ assessment.challenges|e|replace('\n','<br>')|safe }}</p>
+                            </div>
+                            <div style="margin-bottom: 12px; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">
+                                <strong>3. What would you do differently:</strong>
+                                <p style="margin: 5px 0 0 0; color: #495057; white-space: pre-wrap; overflow-wrap: anywhere;">{{ assessment.different|e|replace('\n','<br>')|safe }}</p>
+                            </div>
+                            <div style="margin-bottom: 12px; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">
+                                <strong>4. Your role in the group:</strong>
+                                <p style="margin: 5px 0 0 0; color: #495057; white-space: pre-wrap; overflow-wrap: anywhere;">{{ assessment.role|e|replace('\n','<br>')|safe }}</p>
+                            </div>
+                            {% if assessment.feedback %}
+                            <div style="margin-bottom: 12px; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">
+                                <strong>5. Additional feedback:</strong>
+                                <p style="margin: 5px 0 0 0; color: #495057; white-space: pre-wrap; overflow-wrap: anywhere;">{{ assessment.feedback|e|replace('\n','<br>')|safe }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+                
+                <!-- For lecturers, show compact grouped view -->
+                {% if current_user == "Lecturer" and self_assessments|length > 1 %}
+                <div style="margin-top: 30px; border-top: 2px solid #ddd; padding-top: 20px;">
+                    <h4 style="color: #495057; margin-bottom: 15px; text-align: center;">Summary View for All Students</h4>
+                    
+                    {% set questions = [
+                        "Summary of contribution",
+                        "Challenges and learning", 
+                        "What would you do differently",
+                        "Your role in the group"
+                    ] %}
+                    {% for q_num in range(1, 5) %}
+                        <div style="margin-bottom: 20px;">
+                            <h5 style="color: #007bff; margin-bottom: 10px; padding: 8px; background: #e3f2fd; border-radius: 4px;">{{ q_num }}. {{ questions[q_num-1] }}</h5>
+                            {% for assessment_data in self_assessments %}
+                                {% set assessment = assessment_data.assessment %}
+                                {% set student_name = assessment_data.student_name %}
+                                <div style="margin-bottom: 8px; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">
+                                    <strong style="color: #495057;">{{ student_name|e }}:</strong>
+                                    <span style="color: #6c757d; white-space: pre-wrap; overflow-wrap: anywhere;">
+                                        {% if q_num == 1 %}{{ assessment.summary|e|replace('\n','<br>')|safe }}
+                                        {% elif q_num == 2 %}{{ assessment.challenges|e|replace('\n','<br>')|safe }}
+                                        {% elif q_num == 3 %}{{ assessment.different|e|replace('\n','<br>')|safe }}
+                                        {% elif q_num == 4 %}{{ assessment.role|e|replace('\n','<br>')|safe }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% else %}
+                <div style="padding: 15px; text-align: center; color: #999; font-style: italic;">
+                    No self assessments submitted
+                </div>
+            {% endif %}
+        {% else %}
+            <div style="padding: 15px; text-align: center; color: #999; font-style: italic;">
+                Self assessments will appear once all reviews are completed
+            </div>
+        {% endif %}
+    </div>
+<!-- TABLE 4: SELF ASSESSMENT RESULTS (READ-ONLY) -->
+<div style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+    <h3 style="margin: 0 0 20px 0; text-align: center; font-weight: bold; color: #333;">SELF ASSESSMENT RESULTS</h3>
+    
+    {% if self_assessments and self_assessments|length > 0 %}
+        {% for assessment_data in self_assessments %}
+            {% set assessment = assessment_data.assessment %}
+            {% set student_name = assessment_data.student_name %}
+            
+            {% if current_user == student_name or is_lecturer %}
+                <div style="margin-bottom: 30px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                    <div style="background: #e9ecef; padding: 15px; border-bottom: 1px solid #ddd;">
+                        <h4 style="margin: 0; color: #495057;">{{ student_name }}'s Self Assessment</h4>
+                        {% if not all_completed and is_lecturer %}
+                        <span style="color: #28a745; font-size: 14px;">✓ Self-assessment completed</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Self Assessment Results -->
+                    <div style="padding: 20px;">
+                        <div class="form-group">
+                            <label>1. Summary of contribution:</label>
+                            <div style="padding: 15px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px;">
+                                {{ assessment.summary|e|replace('\n','<br>')|safe }}
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>2. What challenges did you face and what have you learned?</label>
+                            <div style="padding: 15px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px;">
+                                {{ assessment.challenges|e|replace('\n','<br>')|safe }}
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>3. What would you do differently if you could start over?</label>
+                            <div style="padding: 15px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px;">
+                                {{ assessment.different|e|replace('\n','<br>')|safe }}
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>4. Describe your role in the group and how it helped the team:</label>
+                            <div style="padding: 15px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px;">
+                                {{ assessment.role|e|replace('\n','<br>')|safe }}
+                            </div>
+                        </div>
+                        
+                        {% if assessment.feedback %}
+                        <div class="form-group">
+                            <label>5. Additional feedback or comments:</label>
+                            <div style="padding: 15px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px;">
+                                {{ assessment.feedback|e|replace('\n','<br>')|safe }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+        
+    {% else %}
+        {% if is_lecturer %}
+            <div style="padding: 15px; text-align: center; color: #856404; background: #fff3cd;">
+                No self-assessments have been submitted yet.
+            </div>
+        {% else %}
+            <div style="padding: 15px; text-align: center; color: #007bff; background: #e7f3ff;">
+                Your self-assessment will appear here once you complete it.
+            </div>
+        {% endif %}
+    {% endif %}
+</div>
+
+    <!-- Navigation Buttons -->
+    <div style="text-align: center; margin-top: 30px;">
+        <a href="{{ url_for('form') }}" class="btn btn-secondary" 
+           style="background: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; display: inline-block; text-decoration: none;">
+            Edit Reviews
+        </a>
+        
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary"
+           style="background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; display: inline-block; text-decoration: none;">
+            Back to Dashboard
+        </a>
+
+        <a href="{{ url_for('index') }}" class="btn btn-success"
+           style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; display: inline-block; text-decoration: none;">
+            Start Over
+        </a>
+    </div>
+</div>
+
+<style>
+.form-group {
+    margin-bottom: 25px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #333;
+    font-weight: bold;
+}
+</style>
+{% endblock %}
