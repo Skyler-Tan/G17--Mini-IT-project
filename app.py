@@ -35,12 +35,12 @@ def home():
 def list_subjects():
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
-        teacher_id = int(request.form.get("teacher_id") or 0)
-        if not name or not teacher_id:
-            flash("Subject name and teacher required", "error")
+        lecturer_id = int(request.form.get("lecturer_id") or 0)
+        if not name or not lecturer_id:
+            flash("Subject name and lecturer required", "error")
         else:
             try:
-                s = Subject(name=name, teacher_id=teacher_id)
+                s = Subject(name=name, lecturer_id=lecturer_id)
                 db.session.add(s)
                 db.session.commit()
                 flash("Subject created", "success")
@@ -50,8 +50,8 @@ def list_subjects():
                 flash(f"Error creating subject: {e}", "error")
 
     subjects = Subject.query.order_by(Subject.name).all()
-    teachers = User.query.filter_by(role="teacher").order_by(User.first_name).all()
-    return render_template("subject.html", subjects=subjects, teachers=teachers)
+    lecturer = User.query.filter_by(role="lecturer").order_by(User.first_name).all()
+    return render_template("subject.html", subjects=subjects, lecturer=lecturer)
 
 @app.route("/subjects/<int:subject_id>/delete", methods=["POST"])
 def delete_subject(subject_id):
@@ -132,7 +132,7 @@ def manage_students():
 
                 # Add to group if selected
                 if group_id:
-                    membership = GroupMember(group_id=group_id, student_id=user.id)
+                    membership = GroupMember(group_id=group_id,  id_number=user.id)
                     db.session.add(membership)
                     db.session.commit()
 
@@ -145,9 +145,9 @@ def manage_students():
     students = User.query.filter_by(role="student").order_by(User.first_name).all()
     return render_template("students.html", students=students, subjects=subjects, groups=groups)
 
-@app.route("/students/<int:student_id>/delete", methods=["POST"])
-def delete_student(student_id):
-    user = User.query.get_or_404(student_id)
+@app.route("/students/<int:id_number>/delete", methods=["POST"])
+def delete_student( id_number):
+    user = User.query.get_or_404(id_number)
     try:
         db.session.delete(user)
         db.session.commit()
@@ -199,7 +199,7 @@ def import_students():
 
                     group_id = int(row.get("group_id") or 0) or None
                     if group_id:
-                        membership = GroupMember(group_id=group_id, student_id=user.id)
+                        membership = GroupMember(group_id=group_id, id_number=user.id)
                         db.session.add(membership)
 
                     inserted += 1
