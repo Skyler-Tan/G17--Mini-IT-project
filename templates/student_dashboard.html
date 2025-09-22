@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Peer Review App{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<header class="topbar">
+  <div class="logo-area">
+    <img src="{{ url_for('static', filename='uni_logo-removebg-preview.png') }}" alt="University Logo">
+  </div>
+</header>
+
+<main class="dashboard-main">
+  <h1>Student Peer Review System</h1>
+  <h2>Welcome, {{ user.first_name }}!</h2>
+  
+  <h2>Courses</h2>
+  <section class="cards">
+  <div class="card" style="background-image: url('{{ url_for('static', filename='images/english.jpg') }}');">
+    <a href="{{ url_for('form') }}">Academic English</a>
+  </div>
+
+  <div class="card" style="background-image: url('{{ url_for('static', filename='images/physics.jpg') }}');">
+    <a href="{{ url_for('form') }}">Principles of Physics</a>
+  </div>
+
+  <div class="card" style="background-image: url('{{ url_for('static', filename='images/mathematics.jpg') }}');">
+    <a href="{{ url_for('form') }}">Mathematics</a>
+  </div>
+</section>
+
+  <h2>Settings</h2>
+  <section class="cards">
+  <div class="card" style="background-image: url('{{ url_for('static', filename='images/profile.jpg') }}');">
+    <a href="{{ url_for('profile') }}">My Profile</a>
+  </div>
+
+  <div class="card" style="background-image: url('{{ url_for('static', filename='images/password.jpg') }}');">
+    <a href="{{ url_for('change_password') }}">Change Password</a>
+  </div>
+
+  <div class="card" style="background-image: url('{{ url_for('static', filename='images/logout.jpg') }}');">
+    <a href="{{ url_for('logout') }}">Logout</a>
+  </div>
+  </section>
+</main>
+{% endblock %}
