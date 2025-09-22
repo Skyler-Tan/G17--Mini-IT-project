@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>Review Results</h2>
+<table border="1">
+  <tr><th>Reviewer</th><th>Reviewee</th><th>Score</th><th>Comment</th><th>Time</th></tr>
+  {% for r in reviews %}
+  <tr>
+    <td>{{ r.reviewer.name if r.reviewer else "-" }}</td>
+    <td>{{ r.reviewee.name if r.reviewee else "-" }}</td>
+    <td>{{ r.score }}</td>
+    <td>{{ r.comment or "" }}</td>
+    <td>{{ r.timestamp.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+  </tr>
+  {% endfor %}
+</table>
+<a href="{{ url_for('export_reviews') }}">Download CSV</a>
+{% endblock %}

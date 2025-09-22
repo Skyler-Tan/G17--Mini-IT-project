@@ -1,0 +1,108 @@
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f5f5f5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Site Header (title + nav) */
+.site-header {
+  background: #fff;
+  padding: 1rem;
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+}
+
+.site-header h1 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.site-header nav a {
+  color: #4169e1;
+  text-decoration: none;
+  margin: 0 0.5rem;
+  font-weight: 500;
+}
+
+.site-header nav a:hover {
+  text-decoration: underline;
+}
+
+/* Flash Messages */
+.flash-container {
+  margin: 1rem auto;
+  max-width: 800px;
+}
+
+.flash {
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 5px;
+  font-weight: 500;
+}
+
+.flash.success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.flash.error {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* Topbar (blue strip with logo) */
+.topbar {
+  background-color: #4169e1; 
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 50px 100px;
+}
+
+.topbar .logo-area {
+  display: flex;
+  align-items:flex-start;
+  gap: 10px;
+}
+
+.topbar img {
+  height: 80px;
+}
+
+/* Main Content */
+main {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* Footer */
+.footer {
+  background: #4169e1;
+  color: white;
+  text-align: center;
+  padding: 1rem 0;
+  font-size: 0.9rem;
+}
+
+.footer a {
+  color: #fff;
+  text-decoration: none;
+  margin: 0 0.5rem;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}

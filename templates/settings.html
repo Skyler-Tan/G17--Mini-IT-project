@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>Review Settings</h2>
+<form method="post">
+  <label>Criteria (comma-separated):</label><br>
+  <input type="text" name="criteria" value="{{ setting.criteria }}"><br><br>
+
+  <label>Max Score:</label><br>
+  <input type="number" name="max_score" value="{{ setting.max_score }}"><br><br>
+
+  <label>Deadline:</label><br>
+  <input type="datetime-local" name="deadline"
+         value="{{ setting.deadline.strftime('%Y-%m-%dT%H:%M') if setting.deadline else '' }}"><br><br>
+
+  <button type="submit">Save Settings</button>
+</form>
+{% endblock %}

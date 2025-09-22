@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>Groups for {{ subject.name }}</h2>
+
+<form method="post" class="card">
+  <label>New Group Name</label>
+  <input name="name" placeholder="e.g. Group A" required>
+  <button type="submit">Create Group</button>
+</form>
+
+<table>
+  <thead><tr><th>ID</th><th>Name</th><th>Members</th><th>Actions</th></tr></thead>
+  <tbody>
+    {% for g in groups %}
+      <tr>
+        <td>{{ g.id }}</td>
+        <td>{{ g.name }}</td>
+        <td>
+          {% for m in g.members %}
+            {{ m.user.first_name }} {{ m.user.last_name }}<br>
+          {% endfor %}
+        </td>
+        <td>
+          <form method="post" action="{{ url_for('delete_group', group_id=g.id) }}" onsubmit="return confirm('Delete group?');">
+            <button type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h3>Add Student to Group</h3>
+<form method="post" action="{{ url_for('add_student_to_group', subject_id=subject.id) }}" class="card">
+  <label>Student</label>
+  <select name="student_id" required>
+    {% for s in students %}
+      <option value="{{ s.id }}">{{ s.first_name }} {{ s.last_name }}</option>
+    {% endfor %}
+  </select>
+
+  <label>Group</label>
+  <select name="group_id" required>
+    {% for g in groups %}
+      <option value="{{ g.id }}">{{ g.name }}</option>
+    {% endfor %}
+  </select>
+
+  <button type="submit">Add to Group</button>
+</form>
+{% endblock %}

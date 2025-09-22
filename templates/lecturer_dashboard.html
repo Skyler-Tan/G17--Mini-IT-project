@@ -32,11 +32,25 @@
   </div>
 </section>
 
-  <section class="cards">
+  <h2>Academic Control</h2>
+<section class="cards">
+  {% for subj in subjects %}
     <div class="card" style="background-image: url('{{ url_for('static', filename='images/group.jpg') }}');">
-    <a href="{{ url_for('profile') }}">Assign Group</a>
-  </div>
+      <a href="{{ url_for('manage_groups', subject_id=subj.id) }}">
+        Assign Group for {{ subj.name }}
+      </a>
+    </div>
+  {% else %}
+    <p>No subjects available.</p>
+  {% endfor %}
+</section>
+
+  <section class="cards">
+     <div class="card" style="background-image: url('{{ url_for('static', filename='images/profile.jpg') }}');">
+        <a href="{{ url_for('list_subjects') }}">Create Subjects</a>
+     </div>
   </section>
+
 
   <h2>Settings</h2>
   <section class="cards">

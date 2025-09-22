@@ -1,0 +1,177 @@
+/* Page Heading */
+h2 {
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  color: #333;
+  text-align: left;   /* left aligned instead of centered */
+}
+
+/* New Subject Form (card style) */
+form.card {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+form.card label {
+  font-weight: 600;
+  color: #444;
+}
+
+form.card input {
+  padding: 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+form.card button {
+  background: #4169e1;
+  color: white;
+  border: none;
+  padding: 0.7rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  width: fit-content;
+}
+
+form.card button:hover {
+  background: #3154b5;
+}
+
+/* Subjects Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+table thead {
+  background: #4169e1;
+  color: white;
+}
+
+table thead th {
+  padding: 0.8rem;
+  text-align: left;
+  font-size: 1rem;
+}
+
+table tbody td {
+  padding: 0.8rem;
+  border-bottom: 1px solid #eee;
+}
+
+table tbody tr:hover {
+  background: #f9f9f9;
+}
+
+/* Action Buttons inside table */
+table form {
+  display: inline;
+}
+
+table button {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.7rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+table button:hover {
+  background: #b02a37;
+}
+
+table a {
+  color: #4169e1;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+table a:hover {
+  text-decoration: underline;
+}
+
+/* Container for multiple tables */
+.table-container {
+  display: flex;
+  gap: 2rem;            /* space between tables */
+  margin-top: 1.5rem;
+  align-items: flex-start;
+}
+
+/* Each table takes half width */
+.table-container table {
+  flex: 1;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* Table header */
+.table-container thead {
+  background: #4169e1;
+  color: white;
+}
+
+.table-container thead th {
+  padding: 0.8rem;
+  text-align: left;
+  font-size: 1rem;
+}
+
+/* Table body */
+.table-container tbody td {
+  padding: 0.8rem;
+  border-bottom: 1px solid #eee;
+}
+
+.table-container tbody tr:hover {
+  background: #f9f9f9;
+}
+
+/* Action buttons inside table */
+.table-container form {
+  display: inline;
+}
+
+.table-container button {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.7rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.table-container button:hover {
+  background: #b02a37;
+}
+
+.table-container a {
+  color: #4169e1;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.table-container a:hover {
+  text-decoration: underline;
+}
