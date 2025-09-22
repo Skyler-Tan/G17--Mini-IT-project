@@ -18,11 +18,12 @@ app.config.from_object(Config)
 db.init_app(app)
 migrate = Migrate(app, db)
 
-# ----- Student list from DB (table: user) -----
+# ----- Student list from DB (table: user) - EXCLUDE lecturers -----
 
 def get_students_from_db():
     try:
         from sqlalchemy import text
+        # Only get users with role 'student', exclude lecturers
         rows = db.session.execute(text("SELECT first_name, last_name FROM user WHERE LOWER(role) = 'student'")) \
             .fetchall()
         names = []
@@ -32,10 +33,22 @@ def get_students_from_db():
             full = (fn + " " + ln).strip() or fn or ln
             if full:
                 names.append(full)
-        return names
+        
+        # Return only the first 4 students
+        return names[:4]
     except Exception:
         app.logger.exception("Error fetching students from user table")
         return []
+
+def is_lecturer(username):
+    """Check if user is a lecturer"""
+    try:
+        from sqlalchemy import text
+        result = db.session.execute(text("SELECT role FROM user WHERE CONCAT(first_name, ' ', last_name) = :username"), 
+                                  {'username': username}).fetchone()
+        return result and result[0].lower() == 'lecturer'
+    except Exception:
+        return False
 
 # ---------- Helper Functions ----------
 
@@ -107,43 +120,67 @@ def results():
     students = get_students_from_db()
     status = get_completion_status(students)
     all_completed = all(v['completed'] for v in status.values())
+    completed_count = sum(1 for v in status.values() if v['completed'])  # Keep this one
+    
     current_user = session.get("current_user")
+    is_current_lecturer = is_lecturer(current_user) if current_user else False
 
     rows = []
-    # Always show the results table, but only populate data when all are completed
+    # Show results for all students, even if not all completed
     for student in students:
-        if all_completed:
-            reviews = PeerReview.query.filter_by(reviewee_name=student).all()
-            avg_peer_score = (sum(r.score for r in reviews) / len(reviews)) if reviews else 0
-            
-            # Get comments from other students about this student (only visible to the current student)
-            peer_comments = []
-            if current_user == student:  # Only show comments if viewing your own results
-                for review in reviews:
-                    if review.comment and review.comment.strip():
-                        peer_comments.append({
-                            'reviewer': review.reviewer_name,
-                            'comment': review.comment
-                        })
-            
-            rows.append({
-                'student_name': student,
-                'avg_peer_score': round(avg_peer_score, 2),
-                'peer_comments': peer_comments
-            })
+        reviews = PeerReview.query.filter_by(reviewee_name=student).all()
+        
+        # Calculate average score if there are reviews
+        if reviews:
+            avg_peer_score = sum(r.score for r in reviews) / len(reviews)
+            final_mark = round(avg_peer_score * 20, 2)
         else:
-            # Empty row structure when not all completed
-            rows.append({
+            avg_peer_score = None
+            final_mark = None
+        
+        # Get comments from other students about this student
+        peer_comments = []
+        if current_user == student or is_current_lecturer:  # Show to student themselves or lecturer
+            for review in reviews:
+                if review.comment and review.comment.strip():
+                    peer_comments.append({
+                        'reviewer': review.reviewer_name,
+                        'comment': review.comment
+                    })
+        
+        rows.append({
+            'student_name': student,
+            'avg_peer_score': round(avg_peer_score, 2) if avg_peer_score is not None else None,
+            'final_mark': final_mark,
+            'peer_comments': peer_comments
+        })
+
+    # Get anonymous reviews (always show them)
+    anonymous_reviews = AnonymousReview.query.all()
+
+    self_assessments = []
+    # Remove this line: completed_count = 0 (don't reset the counter!)
+    for student in students:
+        assessment = SelfAssessment.query.filter_by(student_name=student).first()
+        if assessment:
+            self_assessments.append({
                 'student_name': student,
-                'avg_peer_score': None,
-                'peer_comments': []
+                'assessment': assessment
             })
+            # Don't increment completed_count here - it's already calculated above
+
+    # Use the completed_count from the status calculation
+    all_completed = (completed_count == len(students)) 
 
     return render_template(
         "results.html",
         all_completed=all_completed,
+        completed_count=completed_count,  # This now has the correct value
         rows=rows,
-        current_user=current_user
+        current_user=current_user,
+        is_lecturer=is_current_lecturer,
+        anonymous_reviews=anonymous_reviews,
+        self_assessments=self_assessments
     )
 
 @app.route("/form", methods=["GET", "POST"])
@@ -165,13 +202,18 @@ def form():
                 flash("Mismatch in submitted review data.", "error")
                 return redirect(url_for("form"))
 
+            # Enforce review count limits: Must review all 3 other students
+            filtered_reviewees = [r for r in reviewees if r != current_user and r in students_list]
+            if len(filtered_reviewees) != 3:
+                flash("You must review all 3 other students.", "error")
+                return redirect(url_for("form"))
+
             # Remove any previous reviews by this reviewer to allow re-submit/edit
             PeerReview.query.filter_by(reviewer_name=current_user).delete()
 
             for reviewee, score_str, comment in zip(reviewees, scores, comments):
                 if reviewee == current_user:
-                    # skip self-reviews
-                    continue
+                    continue  # skip self-reviews
                 if reviewee not in students_list:
                     continue
                 try:

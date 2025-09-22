@@ -30,6 +30,7 @@
     <div style="background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
         <h4 style="margin-top: 0; color: #495057;">Instructions:</h4>
         <ul style="color: #6c757d; margin-bottom: 0;">
+            <li><strong>You must review all 3 other students</strong></li>
             <li>Rate each team member on a scale of 1-5 (1 = Poor, 5 = Excellent)</li>
             <li>Provide constructive comments about their contribution</li>
             <li>Be honest and fair in your evaluations</li>
@@ -42,57 +43,62 @@
         {% endif %}
     </div>
 
-    <form method="POST" action="{{ url_for('form') }}">
+    <form method="POST" action="{{ url_for('form') }}" id="review-form" onsubmit="return validateForm()">
     <div id="reviews">
-        {% set review_count = 1 %}
+        {% set students_excluding_current = [] %}
         {% for student in students %}
             {% if student != current_user %}
-                {% set student_index = loop.index0 %}
-                <div class="review-item" style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <h4 style="margin-top: 0; color: #333;">
-                        Review {{ review_count }}: {{ student }}
-                        {% if prior_reviews.get(student) %}
-                            <span style="color: #28a745; font-size: 14px; font-weight: normal;">✓ Previously reviewed</span>
-                        {% endif %}
-                    </h4>
-                    
-                    <!-- Hidden fields to track reviewee and score (score synced from radios) -->
-                    <input type="hidden" name="reviewee[]" value="{{ student }}">
-                    <input type="hidden" name="score[]" id="score_val_{{ student_index }}" value="{{ prior_reviews.get(student, {}).get('score', '') }}">
-                    
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #555;">
-                            Score (1-5): <span style="color: #dc3545;">*</span>
-                        </label>
-                        <div style="display: flex; gap: 15px; align-items: center;">
-                            {% for score in range(1, 6) %}
-                                <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
-                                    <input type="radio" name="score_{{ student_index }}" value="{{ score }}" required 
-                                           style="margin-right: 5px; transform: scale(1.2);" 
-                                           onchange="document.getElementById('score_val_{{ student_index }}').value=this.value;" 
-                                           {% if prior_reviews.get(student) and prior_reviews.get(student).get('score') == score %}checked{% endif %}>
-                                    <span style="{% if score <= 2 %}color: #dc3545;{% elif score <= 3 %}color: #ffc107;{% else %}color: #28a745;{% endif %}">
-                                        {{ score }}
-                                    </span>
-                                </label>
-                            {% endfor %}
-                        </div>
-                        <small style="color: #6c757d; display: block; margin-top: 5px;">
-                            1 = Poor, 2 = Below Average, 3 = Average, 4 = Good, 5 = Excellent
-                        </small>
-                    </div>
-
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #555;">
-                            Comment (Optional):
-                        </label>
-                        <textarea name="comment[]" rows="3" 
-                                style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; resize: vertical;"
-                                placeholder="Describe their contribution, strengths, areas for improvement...">{{ prior_reviews.get(student, {}).get('comment', '') }}</textarea>
-                    </div>
-                </div>
-                {% set review_count = review_count + 1 %}
+                {% set _ = students_excluding_current.append(student) %}
             {% endif %}
+        {% endfor %}
+
+        {% for student in students_excluding_current %}
+            {% set student_index = loop.index0 %}
+            <div class="review-item" data-reviewee="{{ student }}" style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h4 style="margin-top: 0; color: #333;">
+                    Review {{ student }}
+                    {% if prior_reviews.get(student) %}
+                        <span style="color: #28a745; font-size: 14px; font-weight: normal; margin-left: 10px;">✓ Previously reviewed</span>
+                    {% endif %}
+                </h4>
+                
+                <!-- Hidden fields to track reviewee and score -->
+                <input type="hidden" name="reviewee[]" value="{{ student }}">
+                <input type="hidden" name="score[]" id="score_val_{{ student_index }}" 
+                       value="{{ prior_reviews.get(student, {}).get('score', '') }}">
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #555;">
+                        Score (1-5): <span style="color: #dc3545;">*</span>
+                    </label>
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        {% for score in range(1, 6) %}
+                            <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                                <input type="radio" name="score_{{ student_index }}" value="{{ score }}" 
+                                       style="margin-right: 5px; transform: scale(1.2);" 
+                                       onchange="document.getElementById('score_val_{{ student_index }}').value=this.value;" 
+                                       {% if prior_reviews.get(student) and prior_reviews.get(student).get('score') == score %}checked{% endif %}
+                                       required>
+                                <span style="{% if score <= 2 %}color: #dc3545;{% elif score <= 3 %}color: #ffc107;{% else %}color: #28a745;{% endif %}">
+                                    {{ score }}
+                                </span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <small style="color: #6c757d; display: block; margin-top: 5px;">
+                        1 = Poor, 2 = Below Average, 3 = Average, 4 = Good, 5 = Excellent
+                    </small>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #555;">
+                        Comment (Optional):
+                    </label>
+                    <textarea name="comment[]" rows="3" 
+                            style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; resize: vertical;"
+                            placeholder="Describe their contribution, strengths, areas for improvement...">{{ prior_reviews.get(student, {}).get('comment', '') }}</textarea>
+                </div>
+            </div>
         {% endfor %}
     </div>
 
@@ -104,7 +110,7 @@
         </div>
 
         <div style="text-align: center; margin-top: 30px;">
-            <button type="submit" style="background: #28a745; color: white; padding: 12px 30px; 
+            <button type="submit" id="submit-btn" style="background: #28a745; color: white; padding: 12px 30px; 
                                          border: none; border-radius: 6px; cursor: pointer; font-size: 16px;
                                          transition: all 0.3s;">
                 {% if prior_reviews %}Update Peer Reviews{% else %}Submit Peer Reviews{% endif %}
@@ -123,7 +129,7 @@
 </div>
 
 <style>
-button:hover {
+button:hover:not(:disabled) {
     background-color: #218838 !important;
     transform: translateY(-1px);
 }
@@ -146,10 +152,28 @@ textarea:focus, input:focus {
     outline: none;
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
-
-/* Visual indicator for completed reviews */
-.review-item:has(input[type="radio"]:checked) {
-    border-left: 4px solid #28a745;
-}
 </style>
+
+<script>
+function validateForm() {
+    // Check if all required scores are filled
+    const scoreInputs = document.querySelectorAll('input[type="hidden"][name="score[]"]');
+    for (const input of scoreInputs) {
+        if (!input.value) {
+            alert('Please provide a score for all 3 students before submitting.');
+            return false;
+        }
+    }
+    return true;
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Add required attribute to all radio buttons
+    const radioGroups = document.querySelectorAll('input[type="radio"][name^="score_"]');
+    radioGroups.forEach(radio => {
+        radio.setAttribute('required', 'required');
+    });
+});
+</script>
 {% endblock %}
