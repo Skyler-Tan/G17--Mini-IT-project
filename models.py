@@ -1,103 +1,115 @@
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
 from datetime import datetime
+from sqlalchemy import text
 
 db = SQLAlchemy()
 
+# ---------------- USERS ---------------- #
+class User(UserMixin, db.Model):
+    __tablename__ = "users"
+
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.String(64), nullable=True, unique=False)  # optional, only for students
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default="student")  # "student" or "teacher"
+    gender = db.Column(db.String(20), nullable=False, server_default=text("'Other'"))
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    subjects = db.relationship("Subject", backref="teacher", lazy="selectin")  # if teacher
+    memberships = db.relationship("GroupMember", backref="student_user", lazy="selectin")  # if student
+    given_reviews = db.relationship("PeerReview", foreign_keys="PeerReview.reviewer_id", backref="reviewer_user")
+    received_reviews = db.relationship("PeerReview", foreign_keys="PeerReview.reviewee_id", backref="reviewee_user")
+
+    def __repr__(self):
+        return f"<User id={self.id} username={self.username} role={self.role}>"
+
+
+# ---------------- SUBJECT & GROUP ---------------- #
 class Subject(db.Model):
-    __tablename__ = "subjects"   # ✅ renamed table
+    __tablename__ = "subjects"
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False, unique=True)
-    groups = db.relationship(
-        "Group",
-        backref=db.backref("subject", lazy='select'),  # ✅ renamed
-        cascade="all, delete",
-        passive_deletes=True,
-        lazy='selectin'
-    )
-    students = db.relationship(
-        "Student",
-        backref=db.backref("subject", lazy='select'),  # ✅ renamed
-        passive_deletes=True,
-        lazy='selectin'
-    )
+    code = db.Column(db.String(50), unique=True, nullable=True)
+
+    teacher_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+
+    groups = db.relationship("Group", backref="subject", cascade="all, delete", lazy="selectin")
+    settings = db.relationship("Setting", backref="subject", uselist=False, cascade="all, delete")
 
     def __repr__(self):
         return f"<Subject id={self.id} name={self.name!r}>"
 
+
 class Group(db.Model):
     __tablename__ = "groups"
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
-    subject_id = db.Column(db.Integer, db.ForeignKey("subjects.id", ondelete="CASCADE"), nullable=False)  # ✅
+    subject_id = db.Column(db.Integer, db.ForeignKey("subjects.id", ondelete="CASCADE"), nullable=False)
 
-    students = db.relationship(
-        "Student",
-        backref=db.backref("group", lazy='select'),
-        passive_deletes=True,
-        lazy='selectin'
-    )
+    members = db.relationship("GroupMember", backref="group", cascade="all, delete", lazy="selectin")
+    reviews = db.relationship("PeerReview", backref="group", cascade="all, delete", lazy="selectin")
 
     __table_args__ = (
-        db.UniqueConstraint('name', 'subject_id', name='uq_group_name_per_subject'),  # ✅
+        db.UniqueConstraint("name", "subject_id", name="uq_group_name_per_subject"),
     )
 
     def __repr__(self):
         return f"<Group id={self.id} name={self.name!r} subject_id={self.subject_id}>"
 
-class Student(db.Model):
-    __tablename__ = "students"
-    id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.String(64), nullable=True)
-    name = db.Column(db.String(120), nullable=False)
-    email = db.Column(db.String(255), nullable=False)
-    subject_id = db.Column(db.Integer, db.ForeignKey("subjects.id", ondelete="SET NULL"), nullable=True)  # ✅
-    group_id = db.Column(db.Integer, db.ForeignKey("groups.id", ondelete="SET NULL"), nullable=True)
 
-    __table_args__ = (
-        db.UniqueConstraint('student_id', 'subject_id', name='uq_student_id_per_subject'),  # ✅
-        db.Index('ix_students_email', 'email'),
-        db.Index('ix_students_student_id', 'student_id'),
-    )
+class GroupMember(db.Model):
+    __tablename__ = "group_members"
+
+    id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey("groups.id", ondelete="CASCADE"), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
-        return f"<Student id={self.id} name={self.name!r} email={self.email!r} subject_id={self.subject_id} group_id={self.group_id}>"
+        return f"<GroupMember group_id={self.group_id} student_id={self.student_id}>"
 
-class Review(db.Model):
-    __tablename__ = "reviews"
+
+# ---------------- PEER REVIEWS ---------------- #
+class PeerReview(db.Model):
+    __tablename__ = "peer_reviews"
+
     id = db.Column(db.Integer, primary_key=True)
-    reviewer_id = db.Column(db.Integer, db.ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
-    reviewee_id = db.Column(db.Integer, db.ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    reviewer_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    reviewee_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    group_id = db.Column(db.Integer, db.ForeignKey("groups.id", ondelete="CASCADE"), nullable=False)
+
     score = db.Column(db.Integer, nullable=False)
     comment = db.Column(db.Text, nullable=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-
-    reviewer = db.relationship(
-        "Student",
-        foreign_keys=[reviewer_id],
-        backref=db.backref("given_reviews", lazy='selectin', passive_deletes=True)
-    )
-    reviewee = db.relationship(
-        "Student",
-        foreign_keys=[reviewee_id],
-        backref=db.backref("received_reviews", lazy='selectin', passive_deletes=True)
-    )
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     __table_args__ = (
-        db.CheckConstraint('reviewer_id <> reviewee_id', name='ck_review_not_self'),
-        db.CheckConstraint('score >= 0', name='ck_review_score_non_negative'),
-        db.Index('ix_reviews_reviewer_id', 'reviewer_id'),
-        db.Index('ix_reviews_reviewee_id', 'reviewee_id'),
+        db.CheckConstraint("reviewer_id <> reviewee_id", name="ck_review_not_self"),
+        db.CheckConstraint("score >= 0", name="ck_review_score_non_negative"),
     )
 
     def __repr__(self):
-        return f"<Review id={self.id} reviewer_id={self.reviewer_id} reviewee_id={self.reviewee_id} score={self.score}>"
+        return f"<PeerReview id={self.id} reviewer_id={self.reviewer_id} reviewee_id={self.reviewee_id} score={self.score}>"
 
+
+# ---------------- SETTINGS (per subject) ---------------- #
 class Setting(db.Model):
     __tablename__ = "settings"
+
     id = db.Column(db.Integer, primary_key=True)
+    subject_id = db.Column(db.Integer, db.ForeignKey("subjects.id", ondelete="CASCADE"), nullable=False)
+
     criteria = db.Column(db.String(255), default="Collaboration, Contribution, Communication")
     max_score = db.Column(db.Integer, default=10)
     deadline = db.Column(db.DateTime, nullable=True)
 
     def __repr__(self):
-        return f"<Setting id={self.id} max_score={self.max_score} deadline={self.deadline}>"
+        return f"<Setting id={self.id} subject_id={self.subject_id} max_score={self.max_score}>"

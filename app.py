@@ -6,9 +6,9 @@ from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for, flash, make_response
 from flask_migrate import Migrate
 from config import Config
-from models import db, Subject, Group, Student, Review, Setting  # ✅ Class → Subject
+from models import db, User, Subject, Group, GroupMember, PeerReview, Setting
 
-# ✅ Flask app setup
+# ---------------- Flask app setup ---------------- #
 ALLOWED_EXT = {"csv"}
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXT
@@ -16,7 +16,7 @@ def allowed_file(filename):
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Make sure instance & upload folders exist
+# Make sure folders exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(os.path.join(os.path.dirname(__file__), "instance"), exist_ok=True)
 
@@ -24,19 +24,23 @@ db.init_app(app)
 migrate = Migrate()
 migrate.init_app(app, db)
 
+# ---------------- ROUTES ---------------- #
+
 @app.route("/")
 def home():
-    return redirect(url_for("list_subjects"))  # ✅
+    return redirect(url_for("list_subjects"))
 
-@app.route("/subjects", methods=["GET", "POST"])  # ✅
+# ---------------- SUBJECT ---------------- #
+@app.route("/subjects", methods=["GET", "POST"])
 def list_subjects():
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
-        if not name:
-            flash("Subject name required", "error")
+        teacher_id = int(request.form.get("teacher_id") or 0)
+        if not name or not teacher_id:
+            flash("Subject name and teacher required", "error")
         else:
             try:
-                s = Subject(name=name)  # ✅
+                s = Subject(name=name, teacher_id=teacher_id)
                 db.session.add(s)
                 db.session.commit()
                 flash("Subject created", "success")
@@ -46,9 +50,10 @@ def list_subjects():
                 flash(f"Error creating subject: {e}", "error")
 
     subjects = Subject.query.order_by(Subject.name).all()
-    return render_template("subject.html", subjects=subjects)  # ✅
+    teachers = User.query.filter_by(role="teacher").order_by(User.first_name).all()
+    return render_template("subject.html", subjects=subjects, teachers=teachers)
 
-@app.route("/subjects/<int:subject_id>/delete", methods=["POST"])  # ✅
+@app.route("/subjects/<int:subject_id>/delete", methods=["POST"])
 def delete_subject(subject_id):
     subj = Subject.query.get_or_404(subject_id)
     try:
@@ -60,7 +65,8 @@ def delete_subject(subject_id):
         flash(f"Error deleting subject: {e}", "error")
     return redirect(url_for("list_subjects"))
 
-@app.route("/subjects/<int:subject_id>/groups", methods=["GET", "POST"])  # ✅
+# ---------------- GROUP ---------------- #
+@app.route("/subjects/<int:subject_id>/groups", methods=["GET", "POST"])
 def manage_groups(subject_id):
     subj = Subject.query.get_or_404(subject_id)
     if request.method == "POST":
@@ -69,7 +75,7 @@ def manage_groups(subject_id):
             flash("Group name required", "error")
         else:
             try:
-                g = Group(name=name, subject_id=subject_id)  # ✅
+                g = Group(name=name, subject_id=subject_id)
                 db.session.add(g)
                 db.session.commit()
                 flash("Group created", "success")
@@ -79,12 +85,12 @@ def manage_groups(subject_id):
                 flash(f"Error creating group: {e}", "error")
 
     groups = Group.query.filter_by(subject_id=subject_id).order_by(Group.name).all()
-    return render_template("groups.html", subj=subj, groups=groups)  # ✅ cls → subj
+    return render_template("groups.html", subj=subj, groups=groups)
 
 @app.route("/groups/<int:group_id>/delete", methods=["POST"])
 def delete_group(group_id):
     grp = Group.query.get_or_404(group_id)
-    subject_id = grp.subject_id  # ✅
+    subject_id = grp.subject_id
     try:
         db.session.delete(grp)
         db.session.commit()
@@ -92,41 +98,58 @@ def delete_group(group_id):
     except Exception as e:
         db.session.rollback()
         flash(f"Error deleting group: {e}", "error")
-    return redirect(url_for("manage_groups", subject_id=subject_id))  # ✅
+    return redirect(url_for("manage_groups", subject_id=subject_id))
 
+# ---------------- STUDENTS / USERS ---------------- #
 @app.route("/students", methods=["GET", "POST"])
 def manage_students():
-    subjects = Subject.query.order_by(Subject.name).all()  # ✅
+    subjects = Subject.query.order_by(Subject.name).all()
     groups = Group.query.order_by(Group.name).all()
     if request.method == "POST":
-        name = (request.form.get("name") or "").strip()
+        first_name = (request.form.get("first_name") or "").strip()
+        last_name = (request.form.get("last_name") or "").strip()
         email = (request.form.get("email") or "").strip()
-        student_id = (request.form.get("student_id") or "").strip() or None
-        subject_id = int(request.form.get("subject_id") or 0) or None  # ✅
+        username = (request.form.get("username") or "").strip()
+        password = (request.form.get("password") or "").strip()
+        role = "student"
+        subject_id = int(request.form.get("subject_id") or 0) or None
         group_id = int(request.form.get("group_id") or 0) or None
 
-        if not name or not email:
-            flash("Name and email required", "error")
+        if not first_name or not last_name or not email or not username or not password:
+            flash("All fields are required", "error")
         else:
             try:
-                s = Student(name=name, email=email, student_id=student_id,
-                            subject_id=subject_id, group_id=group_id)  # ✅
-                db.session.add(s)
+                user = User(
+                    first_name=first_name,
+                    last_name=last_name,
+                    email=email,
+                    username=username,
+                    password=password,
+                    role=role
+                )
+                db.session.add(user)
                 db.session.commit()
+
+                # Add to group if selected
+                if group_id:
+                    membership = GroupMember(group_id=group_id, student_id=user.id)
+                    db.session.add(membership)
+                    db.session.commit()
+
                 flash("Student added", "success")
                 return redirect(url_for("manage_students"))
             except Exception as e:
                 db.session.rollback()
                 flash(f"Error adding student: {e}", "error")
 
-    students = Student.query.order_by(Student.name).all()
-    return render_template("students.html", students=students, subjects=subjects, groups=groups)  # ✅
+    students = User.query.filter_by(role="student").order_by(User.first_name).all()
+    return render_template("students.html", students=students, subjects=subjects, groups=groups)
 
 @app.route("/students/<int:student_id>/delete", methods=["POST"])
 def delete_student(student_id):
-    s = Student.query.get_or_404(student_id)
+    user = User.query.get_or_404(student_id)
     try:
-        db.session.delete(s)
+        db.session.delete(user)
         db.session.commit()
         flash("Student removed", "success")
     except Exception as e:
@@ -134,6 +157,7 @@ def delete_student(student_id):
         flash(f"Error removing student: {e}", "error")
     return redirect(url_for("manage_students"))
 
+# ---------------- IMPORT CSV ---------------- #
 @app.route("/students/import", methods=["GET", "POST"])
 def import_students():
     if request.method == "POST":
@@ -154,16 +178,30 @@ def import_students():
             with open(path, newline='', encoding='utf-8-sig') as csvfile:
                 reader = csv.DictReader(csvfile)
                 for row in reader:
-                    name = (row.get("name") or "").strip()
+                    first_name = (row.get("first_name") or "").strip()
+                    last_name = (row.get("last_name") or "").strip()
                     email = (row.get("email") or "").strip()
-                    if not name or not email:
+                    username = (row.get("username") or "").strip()
+                    password = (row.get("password") or "").strip()
+                    if not first_name or not last_name or not email or not username or not password:
                         skipped += 1
                         continue
-                    s = Student(name=name, email=email,
-                                student_id=row.get("student_id") or None,
-                                subject_id=int(row.get("subject_id")) if row.get("subject_id") else None,  # ✅
-                                group_id=int(row.get("group_id")) if row.get("group_id") else None)
-                    db.session.add(s)
+                    user = User(
+                        first_name=first_name,
+                        last_name=last_name,
+                        email=email,
+                        username=username,
+                        password=password,
+                        role="student"
+                    )
+                    db.session.add(user)
+                    db.session.flush()  # get user.id for group
+
+                    group_id = int(row.get("group_id") or 0) or None
+                    if group_id:
+                        membership = GroupMember(group_id=group_id, student_id=user.id)
+                        db.session.add(membership)
+
                     inserted += 1
                 db.session.commit()
             flash(f"CSV processed: {inserted} inserted, {skipped} skipped", "success")
@@ -177,29 +215,32 @@ def import_students():
         return redirect(url_for("manage_students"))
     return render_template("import_students.html")
 
+# ---------------- PEER REVIEWS ---------------- #
 @app.route("/reviews")
 def show_reviews():
-    reviews = Review.query.order_by(Review.timestamp.desc()).all()
+    reviews = PeerReview.query.order_by(PeerReview.created_at.desc()).all()
     return render_template("reviews.html", reviews=reviews)
 
 @app.route("/reviews/export")
 def export_reviews():
-    reviews = Review.query.all()
+    reviews = PeerReview.query.all()
     si = StringIO()
     writer = csv.writer(si)
     writer.writerow(["Reviewer", "Reviewee", "Score", "Comment", "Timestamp"])
     for r in reviews:
         writer.writerow([
-            r.reviewer.name if r.reviewer else "-",
-            r.reviewee.name if r.reviewee else "-",
-            r.score, r.comment or "",
-            r.timestamp.strftime("%Y-%m-%d %H:%M:%S") if r.timestamp else ""
+            f"{r.reviewer_user.first_name} {r.reviewer_user.last_name}" if r.reviewer_user else "-",
+            f"{r.reviewee_user.first_name} {r.reviewee_user.last_name}" if r.reviewee_user else "-",
+            r.score,
+            r.comment or "",
+            r.created_at.strftime("%Y-%m-%d %H:%M:%S") if r.created_at else ""
         ])
     output = make_response(si.getvalue())
     output.headers["Content-Disposition"] = "attachment; filename=reviews.csv"
     output.headers["Content-type"] = "text/csv"
     return output
 
+# ---------------- SETTINGS ---------------- #
 @app.route("/settings", methods=["GET", "POST"])
 def manage_settings():
     setting = Setting.query.first()
@@ -223,5 +264,6 @@ def manage_settings():
 
     return render_template("settings.html", setting=setting)
 
+# ---------------- MAIN ---------------- #
 if __name__ == "__main__":
     app.run(debug=True)
