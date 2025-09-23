@@ -1,14 +1,12 @@
-from flask import Flask, render_template, redirect, url_for, flash, request
+from flask import Flask, render_template, redirect, url_for, flash, request, session
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask import abort
-from flask_login import current_user 
 from datetime import datetime
 from flask_migrate import Migrate
-from sqlalchemy import or_
-from sqlalchemy import text
+from sqlalchemy import or_, text
 import os
 import secrets
 from models import db, PeerReview, SelfAssessment, AnonymousReview
@@ -30,7 +28,6 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 # ----- Student list from DB (table: user) - EXCLUDE lecturers -----
-
 def get_students_from_db():
     try:
         from sqlalchemy import text
@@ -62,7 +59,6 @@ def is_lecturer(username):
         return False
 
 # ---------- Helper Functions ----------
-
 def get_completion_status(students):
     """Get completion status details for a given list of students.
     Returns mapping: { student: {reviews_count, has_assessment, completed} }
@@ -78,14 +74,19 @@ def get_completion_status(students):
         }
     return status
 
-# ---------- Routes ----------
-
+# ---------- Peer Review Routes (Main Flow) ----------
 @app.route("/")
 def index():
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
 
-@app.route("/dashboard")
-def dashboard():
+@app.route("/peer_review")
+@login_required
+def peer_review():
+    """Main peer review dashboard - replaces the old dashboard.html"""
+    if current_user.role != "student":
+        flash("This page is for students only.", "error")
+        return redirect(url_for('dashboard'))
+    
     students = get_students_from_db()
     completion_status = get_completion_status(students)
 
@@ -104,7 +105,7 @@ def dashboard():
             results.append([student, round(avg_peer_score, 2)])
             
     return render_template(
-        "dashboard.html",
+        "view.html",
         students=students,
         completion_status=completion_status,
         completed_count=completed_count,
@@ -114,7 +115,13 @@ def dashboard():
     )
 
 @app.route("/switch_user_and_form/<username>")
+@login_required
 def switch_user_and_form(username):
+    """Switch to a specific student and start review"""
+    if current_user.role != "student":
+        flash("This action is for students only.", "error")
+        return redirect(url_for('dashboard'))
+    
     display_name = username.replace('_', ' ')
     students = get_students_from_db()
     
@@ -124,17 +131,176 @@ def switch_user_and_form(username):
         return redirect(url_for("form"))
     else:
         flash("Invalid user selected", "error")
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("peer_review"))
+
+@app.route("/form", methods=["GET", "POST"])
+@login_required
+def form():
+    """Peer review form"""
+    if current_user.role != "student":
+        flash("This page is for students only.", "error")
+        return redirect(url_for('dashboard'))
+    
+    current_user_name = session.get("current_user")
+    students_list = get_students_from_db()
+    
+    if not current_user_name:
+        flash("Select a student from the Peer Review page first.", "error")
+        return redirect(url_for("peer_review"))
+
+    if request.method == "POST":
+        try:
+            reviewees = request.form.getlist("reviewee[]")
+            scores = request.form.getlist("score[]")
+            comments = request.form.getlist("comment[]")
+            anon_text = request.form.get("anonymous_review", "").strip()
+
+            if not (len(reviewees) == len(scores) == len(comments)):
+                flash("Mismatch in submitted review data.", "error")
+                return redirect(url_for("form"))
+
+            # Enforce review count limits: Must review all 3 other students
+            filtered_reviewees = [r for r in reviewees if r != current_user_name and r in students_list]
+            if len(filtered_reviewees) != 3:
+                flash("You must review all 3 other students.", "error")
+                return redirect(url_for("form"))
+
+            # Remove any previous reviews by this reviewer to allow re-submit/edit
+            PeerReview.query.filter_by(reviewer_name=current_user_name).delete()
+            
+            for reviewee, score_str, comment in zip(reviewees, scores, comments):
+                if reviewee == current_user_name:
+                    continue  # skip self-reviews
+                if reviewee not in students_list:
+                    continue
+                try:
+                    score = int(score_str)
+                except (TypeError, ValueError):
+                    flash("Invalid score provided.", "error")
+                    return redirect(url_for("form"))
+                if not (1 <= score <= 5):
+                    flash("Scores must be between 1 and 5.", "error")
+                    return redirect(url_for("form"))
+
+                review = PeerReview(
+                    reviewer_name=current_user_name,
+                    reviewee_name=reviewee,
+                    score=score,
+                    comment=comment or ""
+                )
+                db.session.add(review)
+
+            # Save anonymous review if provided
+            if anon_text:
+                anon = AnonymousReview(content=anon_text)
+                db.session.add(anon)
+
+            db.session.commit()
+            flash("Peer reviews submitted successfully.", "success")
+            return redirect(url_for("self_assessment"))
+        except Exception as e:
+            db.session.rollback()
+            app.logger.exception("Error saving peer reviews")
+            flash(f"An error occurred while saving your reviews: {str(e)}", "error")
+            return redirect(url_for("form"))
+
+    # GET: Pre-fill prior reviews if any
+    prior_reviews = {}
+    existing = PeerReview.query.filter_by(reviewer_name=current_user_name).all()
+    for r in existing:
+        prior_reviews[r.reviewee_name] = {"score": r.score, "comment": r.comment}
+
+    prior_anon_review = ""
+
+    return render_template(
+        "form.html", 
+        current_user=current_user_name, 
+        prior_reviews=prior_reviews, 
+        students=students_list,
+        prior_anon_review=prior_anon_review
+    )
+
+@app.route("/self_assessment", methods=["GET", "POST"])
+@login_required
+def self_assessment():
+    """Self assessment form"""
+    if current_user.role != "student":
+        flash("This page is for students only.", "error")
+        return redirect(url_for('dashboard'))
+    
+    current_user_name = session.get("current_user")
+    if not current_user_name:
+        flash("Select a student from the Peer Review page first.", "error")
+        return redirect(url_for("peer_review"))
+
+    if request.method == "POST":
+        try:
+            summary = request.form.get("summary", "").strip()
+            challenges = request.form.get("challenges", "").strip()
+            different = request.form.get("different", "").strip()
+            role = request.form.get("role", "").strip()
+            feedback = request.form.get("feedback", "").strip()
+
+            if not all([summary, challenges, different, role]):
+                flash("Please complete all required fields.", "error")
+                return redirect(url_for("self_assessment"))
+
+            # Replace existing self assessment for this user
+            SelfAssessment.query.filter_by(student_name=current_user_name).delete()
+            assessment = SelfAssessment(
+                student_name=current_user_name,
+                summary=summary,
+                challenges=challenges,
+                different=different,
+                role=role,
+                feedback=feedback or None
+            )
+            db.session.add(assessment)
+            db.session.commit()
+
+            flash("Self assessment submitted successfully.", "success")
+            return redirect(url_for("done"))
+        except Exception as e:
+            db.session.rollback()
+            app.logger.exception("Error saving self assessment")
+            flash(f"An error occurred while saving your self assessment: {str(e)}", "error")
+            return redirect(url_for("self_assessment"))
+
+    # Pre-fill existing self assessment data when editing
+    existing_assessment = SelfAssessment.query.filter_by(student_name=current_user_name).first()
+    assessment_data = {}
+    if existing_assessment:
+        assessment_data = {
+            'summary': existing_assessment.summary,
+            'challenges': existing_assessment.challenges,
+            'different': existing_assessment.different,
+            'role': existing_assessment.role,
+            'feedback': existing_assessment.feedback or ''
+        }
+
+    return render_template("self_assessment.html", current_user=current_user_name, assessment_data=assessment_data)
+
+@app.route("/done")
+@login_required
+def done():
+    """Completion page"""
+    if current_user.role != "student":
+        flash("This page is for students only.", "error")
+        return redirect(url_for('dashboard'))
+    
+    return render_template("done.html", current_user=session.get("current_user"))
 
 @app.route("/results")
+@login_required
 def results():
+    """Results page"""
     students = get_students_from_db()
     status = get_completion_status(students)
     all_completed = all(v['completed'] for v in status.values())
     completed_count = sum(1 for v in status.values() if v['completed'])
     
-    current_user = session.get("current_user")
-    is_current_lecturer = is_lecturer(current_user) if current_user else False
+    current_user_name = session.get("current_user")
+    is_current_lecturer = is_lecturer(current_user_name) if current_user_name else False
 
     rows = []
     # Only show results when all students have completed their reviews and assessments
@@ -151,7 +317,7 @@ def results():
         
         # Get comments from other students about this student
         peer_comments = []
-        if current_user == student or is_current_lecturer:  # Show to student themselves or lecturer
+        if current_user_name == student or is_current_lecturer:  # Show to student themselves or lecturer
             for review in reviews:
                 if review.comment and review.comment.strip():
                     peer_comments.append({
@@ -183,173 +349,20 @@ def results():
         all_completed=all_completed,
         completed_count=completed_count,
         rows=rows,
-        current_user=current_user,
+        current_user=current_user_name,
         is_lecturer=is_current_lecturer,
         anonymous_reviews=anonymous_reviews,
         self_assessments=self_assessments
     )
 
-@app.route("/form", methods=["GET", "POST"])
-def form():
-    current_user = session.get("current_user")
-    students_list = get_students_from_db()
-    if not current_user:
-        flash("Select a student from the Dashboard first.", "error")
-        return redirect(url_for("dashboard"))
-
-    if request.method == "POST":
-        try:
-            reviewees = request.form.getlist("reviewee[]")
-            scores = request.form.getlist("score[]")
-            comments = request.form.getlist("comment[]")
-            anon_text = request.form.get("anonymous_review", "").strip()
-
-            if not (len(reviewees) == len(scores) == len(comments)):
-                flash("Mismatch in submitted review data.", "error")
-                return redirect(url_for("form"))
-
-            # Enforce review count limits: Must review all 3 other students
-            filtered_reviewees = [r for r in reviewees if r != current_user and r in students_list]
-            if len(filtered_reviewees) != 3:
-                flash("You must review all 3 other students.", "error")
-                return redirect(url_for("form"))
-
-            # Remove any previous reviews by this reviewer to allow re-submit/edit
-            PeerReview.query.filter_by(reviewer_name=current_user).delete()
-            
-            # Remove previous anonymous review by this user (if any) to allow editing
-            # Note: We can't directly link anonymous reviews to users, so we'll remove all
-            # existing anonymous reviews and re-add them. This is a limitation of anonymous reviews.
-            # For better functionality, consider adding a user_id field to AnonymousReview model.
-
-            for reviewee, score_str, comment in zip(reviewees, scores, comments):
-                if reviewee == current_user:
-                    continue  # skip self-reviews
-                if reviewee not in students_list:
-                    continue
-                try:
-                    score = int(score_str)
-                except (TypeError, ValueError):
-                    flash("Invalid score provided.", "error")
-                    return redirect(url_for("form"))
-                if not (1 <= score <= 5):
-                    flash("Scores must be between 1 and 5.", "error")
-                    return redirect(url_for("form"))
-
-                review = PeerReview(
-                    reviewer_name=current_user,
-                    reviewee_name=reviewee,
-                    score=score,
-                    comment=comment or ""
-                )
-                db.session.add(review)
-
-            # Save anonymous review if provided
-            if anon_text:
-                anon = AnonymousReview(content=anon_text)
-                db.session.add(anon)
-
-            db.session.commit()
-            flash("Peer reviews submitted successfully.", "success")
-            return redirect(url_for("self_assessment"))
-        except Exception as e:
-            db.session.rollback()
-            app.logger.exception("Error saving peer reviews")
-            flash(f"An error occurred while saving your reviews: {str(e)}", "error")
-            return redirect(url_for("form"))
-
-    # GET: Pre-fill prior reviews if any
-    prior_reviews = {}
-    existing = PeerReview.query.filter_by(reviewer_name=current_user).all()
-    for r in existing:
-        prior_reviews[r.reviewee_name] = {"score": r.score, "comment": r.comment}
-
-    # Get prior anonymous review - this is tricky since anonymous reviews don't have user identification
-    # For now, we'll assume the last anonymous review might be from this user (not ideal)
-    prior_anon_review = ""
-    # Note: This is a limitation - anonymous reviews can't be properly edited without user identification
-
-    return render_template(
-        "form.html", 
-        current_user=current_user, 
-        prior_reviews=prior_reviews, 
-        students=students_list,
-        prior_anon_review=prior_anon_review
-    )
-
-@app.route("/self_assessment", methods=["GET", "POST"])
-def self_assessment():
-    current_user = session.get("current_user")
-    if not current_user:
-        flash("Select a student from the Dashboard first.", "error")
-        return redirect(url_for("dashboard"))
-
-    if request.method == "POST":
-        try:
-            summary = request.form.get("summary", "").strip()
-            challenges = request.form.get("challenges", "").strip()
-            different = request.form.get("different", "").strip()
-            role = request.form.get("role", "").strip()
-            feedback = request.form.get("feedback", "").strip()
-
-            if not all([summary, challenges, different, role]):
-                flash("Please complete all required fields.", "error")
-                return redirect(url_for("self_assessment"))
-
-            # Replace existing self assessment for this user
-            SelfAssessment.query.filter_by(student_name=current_user).delete()
-            assessment = SelfAssessment(
-                student_name=current_user,
-                summary=summary,
-                challenges=challenges,
-                different=different,
-                role=role,
-                feedback=feedback or None
-            )
-            db.session.add(assessment)
-            db.session.commit()
-
-            flash("Self assessment submitted successfully.", "success")
-            return redirect(url_for("done"))
-        except Exception as e:
-            db.session.rollback()
-            app.logger.exception("Error saving self assessment")
-            flash(f"An error occurred while saving your self assessment: {str(e)}", "error")
-            return redirect(url_for("self_assessment"))
-
-    # Pre-fill existing self assessment data when editing
-    existing_assessment = SelfAssessment.query.filter_by(student_name=current_user).first()
-    assessment_data = {}
-    if existing_assessment:
-        assessment_data = {
-            'summary': existing_assessment.summary,
-            'challenges': existing_assessment.challenges,
-            'different': existing_assessment.different,
-            'role': existing_assessment.role,
-            'feedback': existing_assessment.feedback or ''
-        }
-
-    return render_template("self_assessment.html", current_user=current_user, assessment_data=assessment_data)
-
-@app.route("/done")
-def done():
-    return render_template("done.html", current_user=session.get("current_user"))
-
-if __name__ == "__main__":
-    debug = os.environ.get("FLASK_DEBUG", "0") == "1"
-    app.run(debug=debug)
-
-#THanish here
-@app.route("/")
-def home():
-    return render_template("login.html", title="Login Page", current_year=datetime.now().year)
+# ========== IGNORE EVERYTHING BELOW THIS LINE (THanish's code) ==========
+# THanish here - IGNORE ALL CODE BELOW THIS POINT
 
 @app.context_processor
 def inject_current_year():
     return {"current_year": datetime.now().year}
 
-
-#Database
+# Database
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.String(20), nullable=False, unique=True)
@@ -361,11 +374,9 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), nullable=False, default='student')
     gender = db.Column(db.String(20), nullable=False, server_default=text("'Other"))
 
-
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
-
 
 def role_required(role):
     def wrapper(fn):
@@ -380,12 +391,8 @@ def role_required(role):
             return fn(*args, **kwargs)
         return decorated_view
     return wrapper
-        
-    
 
-
-#Route to webpages
-
+# Route to webpages
 @app.route('/change_password', methods=["GET", "POST"])
 @login_required
 def change_password():
@@ -400,7 +407,7 @@ def change_password():
         
         if new_password != confirm_password:
             flash("New passwords do not match.", "danger")
-            return redirect(url_for('change password'))
+            return redirect(url_for('change_password'))
         
         current_user.password = generate_password_hash(new_password)
         db.session.commit()
@@ -409,10 +416,6 @@ def change_password():
         return redirect(url_for('dashboard'))
     
     return render_template('change_password.html')
-                            
-                        
-
-
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -442,8 +445,6 @@ def register():
 
     return render_template("register.html")
 
-
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -460,8 +461,6 @@ def login():
             flash("Invalid credentials. Try again.", "danger")
 
     return render_template("login.html")
-
-
 
 @app.route('/dashboard')
 @login_required
@@ -523,3 +522,7 @@ def lecturer_profile():
         flash("Profile updated successfully!", "success")
     
     return render_template("lecturer_profile.html", user=current_user)
+
+if __name__ == "__main__":
+    debug = os.environ.get("FLASK_DEBUG", "0") == "1"
+    app.run(debug=debug)
