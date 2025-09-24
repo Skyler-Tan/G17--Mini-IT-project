@@ -44,18 +44,18 @@ def list_subjects():
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
         
-        # If lecturer, automatically assign teacher_id
-        if current_user.role == "teacher":
-            teacher_id = current_user.id
+        # If lecturer, automatically assign lecturer_id
+        if current_user.role == "lecturer":
+            lecturer_id = current_user.student_id
         else:
             # Admin or other roles need to select a teacher
-            teacher_id = int(request.form.get("teacher_id") or 0)
+            lecturer_id = int(request.form.get("student_id") or 0)
         
-        if not name or not teacher_id:
-            flash("Subject name and teacher required", "error")
+        if not name or not lecturer_id:
+            flash("Subject and lecturer name required", "error")
         else:
             try:
-                s = Subject(name=name, teacher_id=teacher_id)
+                s = Subject(name=name, student_id=student_id)
                 db.session.add(s)
                 db.session.commit()
                 flash("Subject created", "success")
@@ -65,8 +65,8 @@ def list_subjects():
                 flash(f"Error creating subject: {e}", "error")
 
     subjects = Subject.query.order_by(Subject.name).all()
-    teachers = User.query.filter_by(role="teacher").order_by(User.first_name).all()
-    return render_template("subject.html", subjects=subjects, teachers=teachers)
+    teachers = User.query.filter_by(role="lecturer").order_by(User.first_name).all()
+    return render_template("subject.html", subjects=subjects)
 
 @app.route("/subjects/<int:subject_id>/delete", methods=["POST"])
 def delete_subject(subject_id):
@@ -351,7 +351,7 @@ def change_password():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        student_id = request.form.get("student_id")
+        id_number = request.form.get("id_number")
         first_name = request.form.get("first_name")
         last_name = request.form.get("last_name")
         username = request.form.get("username")
@@ -360,13 +360,13 @@ def register():
         role = request.form.get('role', 'student') 
         gender = request.form.get('gender') 
 
-        existing_user = User.query.filter(or_(User.username == username, User.email == email, User.student_id == student_id)).first()
+        existing_user = User.query.filter(or_(User.username == username, User.email == email, User.id_number == id_number)).first()
         if existing_user:
             flash("Username, Email or Student ID already exists. Please try again.", "warning")
             return redirect(url_for('register'))
 
         hashed_pw = generate_password_hash(password, method='pbkdf2:sha256')
-        new_user = User(student_id = student_id, first_name = first_name, last_name = last_name, username=username, email=email, password=hashed_pw, role=role, gender=gender)
+        new_user = User(id_number = id_number, first_name = first_name, last_name = last_name, username=username, email=email, password=hashed_pw, role=role, gender=gender)
         
         db.session.add(new_user)
         db.session.commit()
@@ -453,14 +453,13 @@ def lecturer_profile():
         current_user.first_name = request.form["first_name"]
         current_user.last_name = request.form["last_name"]
         current_user.email = request.form["email"]
-        current_user.student_id = request.form["student_id"]
+        current_user.id_number = request.form["id_number"]
         current_user.username = request.form["username"]
 
         db.session.commit()
         flash("Profile updated successfully!", "success")
     
     return render_template("lecturer_profile.html", user=current_user)
-
 
 if __name__ == "__main__":
     with app.app_context():
