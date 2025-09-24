@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for, flash, make_response
 from flask_migrate import Migrate
 from config import Config
-from models import db, User, Subject, Group, GroupMember, PeerReview, Setting
+from models import db, User, Subject, Group, GroupMember, PeerReview, SelfAssessment, AnonymousReview, Setting
 
 # ---------------- Flask app setup ---------------- #
 ALLOWED_EXT = {"csv"}
