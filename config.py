@@ -13,6 +13,10 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get("DIRECT_URL") or os.environ.get("DATABASE_URL")
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,  # reset connection setiap 5 minit
+    }
 
     UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER") or os.path.join(BASE_DIR, "uploads")
     MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH") or 5 * 1024 * 1024)

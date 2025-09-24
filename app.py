@@ -85,7 +85,27 @@ def manage_groups(subject_id):
                 flash(f"Error creating group: {e}", "error")
 
     groups = Group.query.filter_by(subject_id=subject_id).order_by(Group.name).all()
-    return render_template("groups.html", subj=subj, groups=groups)
+    return render_template("groups.html", subject=subj, groups=groups)
+
+@app.route("/subjects/<int:subject_id>/add_student_to_group", methods=["POST"])
+def add_student_to_group(subject_id):
+    student_id = int(request.form.get("student_id") or 0)
+    group_id = int(request.form.get("group_id") or 0)
+
+    if not student_id or not group_id:
+        flash("Student and Group required", "error")
+        return redirect(url_for("manage_groups", subject_id=subject_id))
+
+    try:
+        membership = GroupMember(group_id=group_id, id_number=student_id)
+        db.session.add(membership)
+        db.session.commit()
+        flash("Student added to group", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error adding student to group: {e}", "error")
+
+    return redirect(url_for("manage_groups", subject_id=subject_id))
 
 @app.route("/groups/<int:group_id>/delete", methods=["POST"])
 def delete_group(group_id):

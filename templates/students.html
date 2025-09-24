@@ -47,7 +47,11 @@
 </form>
 
 <table>
-  <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Username</th><th>Subject</th><th>Group</th><th>Actions</th></tr></thead>
+  <thead>
+    <tr>
+      <th>ID</th><th>Name</th><th>Email</th><th>Username</th><th>Subject</th><th>Group</th><th>Actions</th>
+    </tr>
+  </thead>
   <tbody>
     {% for s in students %}
       <tr>
@@ -62,7 +66,7 @@
           {% endfor %}
         </td>
         <td>
-          <form method="post" action="{{ url_for('delete_student', student_id=s.id) }}" onsubmit="return confirm('Remove student?');">
+          <form method="post" action="{{ url_for('delete_student', id_number=s.id_number) }}" onsubmit="return confirm('Remove student?');">
             <button type="submit">Delete</button>
           </form>
         </td>
