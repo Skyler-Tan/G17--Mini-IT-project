@@ -1,31 +1,42 @@
-from flask import Flask, render_template, redirect, url_for, flash, request, session
+import os
+import secrets
+from flask import Flask, render_template, redirect, url_for, flash, request, session, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-from flask import abort
 from datetime import datetime
 from flask_migrate import Migrate
 from sqlalchemy import or_, text
-import os
-import secrets
-from models import db, PeerReview, SelfAssessment, AnonymousReview
+from dotenv import load_dotenv
 
+# Load .env file FIRST, before importing config
+load_dotenv()
+
+from config import Config
+from models import db, User, Subject, Group, GroupMember, PeerReview, SelfAssessment, AnonymousReview, Setting
+
+# ---------------- Flask app setup ---------------- #
 app = Flask(__name__, instance_relative_config=True)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_urlsafe(32))
 
-# Single database configuration (instance/db.db)
-class Config:
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(app.instance_path, 'db.db')
-
+# Config from Config class
 app.config.from_object(Config)
 
-# Initialize extensions
+# Debug: Check database configuration
+print("=== DATABASE CONFIGURATION ===")
+print("DATABASE_URL from env:", os.environ.get('DATABASE_URL'))
+print("DIRECT_URL from env:", os.environ.get('DIRECT_URL'))
+print("SQLALCHEMY_DATABASE_URI:", app.config.get('SQLALCHEMY_DATABASE_URI'))
+
+# Ensure instance folder exists
+os.makedirs(os.path.join(os.path.dirname(__file__), "instance"), exist_ok=True)
+
+# Init extensions
 db.init_app(app)
 migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+
 
 # ----- Student list from DB (table: user) - EXCLUDE lecturers -----
 def get_students_from_db():
@@ -77,14 +88,33 @@ def get_completion_status(students):
 # ---------- Peer Review Routes (Main Flow) ----------
 @app.route("/")
 def index():
-    return redirect(url_for('login'))
+    return redirect(url_for("login"))
 
+@app.route("/start_peer_review")
+@login_required
+def start_peer_review():
+    """Clear session and start fresh peer review"""
+    if current_user.role != "student":
+        flash("This page is for students only.", "error")
+        return redirect(url_for('dashboard'))
+    
+    # Clear any existing session data
+    session.pop("current_user", None)
+    
+    return redirect(url_for('peer_review'))
+
+# 2. Modify the existing peer_review route to clear session when needed
 @app.route("/peer_review")
 @login_required
 def peer_review():
     if current_user.role != "student":
         flash("This page is for students only.", "error")
         return redirect(url_for('dashboard'))
+    
+    # Clear session if coming fresh (no current_user set or coming from dashboard)
+    referrer = request.referrer or ""
+    if 'dashboard' in referrer or not session.get("current_user"):
+        session.pop("current_user", None)
     
     students = get_students_from_db()
     completion_status = get_completion_status(students)
@@ -113,28 +143,7 @@ def peer_review():
         results=results
     )
 
-@app.route("/switch_user_and_form/<username>")
-@login_required
-def switch_user_and_form(username):
-    """Switch to a specific student and start review"""
-    if current_user.role != "student":
-        flash("This action is for students only.", "error")
-        return redirect(url_for('dashboard'))
-    
-    display_name = username.replace('_', ' ')
-    students = get_students_from_db()
-    
-    # Get the current logged-in user's full name
-    current_user_fullname = f"{current_user.first_name} {current_user.last_name}"
-    
-    # Only allow switching if the selected user IS the current logged-in user
-    if display_name == current_user_fullname:
-        session["current_user"] = display_name
-        flash(f"Reviewing as {display_name}", "info")
-        return redirect(url_for("form"))
-    else:
-        flash("You can only review as yourself. Please select your own name.", "error")
-        return redirect(url_for("peer_review"))
+# 3. Modify form route to better handle missing session
 @app.route("/form", methods=["GET", "POST"])
 @login_required
 def form():
@@ -146,8 +155,9 @@ def form():
     current_user_name = session.get("current_user")
     students_list = get_students_from_db()
     
+    # If no current_user in session, redirect to peer review selection
     if not current_user_name:
-        flash("Select a student from the Peer Review page first.", "error")
+        flash("Please select yourself from the peer review page first.", "info")
         return redirect(url_for("peer_review"))
 
     if request.method == "POST":
@@ -222,6 +232,7 @@ def form():
         prior_anon_review=prior_anon_review
     )
 
+
 @app.route("/self_assessment", methods=["GET", "POST"])
 @login_required
 def self_assessment():
@@ -232,7 +243,7 @@ def self_assessment():
     
     current_user_name = session.get("current_user")
     if not current_user_name:
-        flash("Select a student from the Peer Review page first.", "error")
+        flash("Please select yourself from the peer review page first.", "error")
         return redirect(url_for("peer_review"))
 
     if request.method == "POST":
@@ -279,6 +290,8 @@ def self_assessment():
             'role': existing_assessment.role,
             'feedback': existing_assessment.feedback or ''
         }
+
+    return render_template("self_assessment.html", current_user=current_user_name, assessment_data=assessment_data)
 
     return render_template("self_assessment.html", current_user=current_user_name, assessment_data=assessment_data)
 
