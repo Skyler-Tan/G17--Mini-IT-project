@@ -1,4 +1,11 @@
 {% extends "base.html" %}
+
+{% block title %}Dashboard - Peer Review App{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+{% endblock %}
+
 {% block content %}
 <div style="display: flex; justify-content: center; align-items: center; min-height: 60vh; text-align: center;">
     <div style="max-width: 500px; padding: 40px;">

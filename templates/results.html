@@ -1,5 +1,11 @@
-
 {% extends "base.html" %}
+
+{% block title %}Dashboard - Peer Review App{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
     <h2 style="text-align: center;">Peer Review Results</h2>
@@ -207,7 +213,7 @@
             Back to Dashboard
         </a>
 
-        <a href="{{ url_for('view') }}" class="btn btn-success"
+        <a href="{{ url_for('peer_review') }}" class="btn btn-success"
            style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; display: inline-block; text-decoration: none;">
             Start Over
         </a>

@@ -82,7 +82,6 @@ def index():
 @app.route("/peer_review")
 @login_required
 def peer_review():
-    """Main peer review dashboard - replaces the old dashboard.html"""
     if current_user.role != "student":
         flash("This page is for students only.", "error")
         return redirect(url_for('dashboard'))
@@ -105,7 +104,7 @@ def peer_review():
             results.append([student, round(avg_peer_score, 2)])
             
     return render_template(
-        "view.html",
+        "peer_review.html",
         students=students,
         completion_status=completion_status,
         completed_count=completed_count,
@@ -125,14 +124,17 @@ def switch_user_and_form(username):
     display_name = username.replace('_', ' ')
     students = get_students_from_db()
     
-    if display_name in students:
+    # Get the current logged-in user's full name
+    current_user_fullname = f"{current_user.first_name} {current_user.last_name}"
+    
+    # Only allow switching if the selected user IS the current logged-in user
+    if display_name == current_user_fullname:
         session["current_user"] = display_name
-        flash(f"Switched to {display_name}", "info")
+        flash(f"Reviewing as {display_name}", "info")
         return redirect(url_for("form"))
     else:
-        flash("Invalid user selected", "error")
+        flash("You can only review as yourself. Please select your own name.", "error")
         return redirect(url_for("peer_review"))
-
 @app.route("/form", methods=["GET", "POST"])
 @login_required
 def form():
