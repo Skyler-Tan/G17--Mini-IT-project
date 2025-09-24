@@ -89,10 +89,11 @@ def manage_groups(subject_id):
 
 @app.route("/subjects/<int:subject_id>/add_student_to_group", methods=["POST"])
 def add_student_to_group(subject_id):
-    student_id = int(request.form.get("student_id") or 0)
+    student_id = (request.form.get("student_id") or 0)
     group_id = int(request.form.get("group_id") or 0)
 
-    if not student_id or not group_id:
+    student = User.query.filter_by(id_number=student_id).first()
+    if not student or not group_id:
         flash("Student and Group required", "error")
         return redirect(url_for("manage_groups", subject_id=subject_id))
 
@@ -165,7 +166,7 @@ def manage_students():
     students = User.query.filter_by(role="student").order_by(User.first_name).all()
     return render_template("students.html", students=students, subjects=subjects, groups=groups)
 
-@app.route("/students/<int:id_number>/delete", methods=["POST"])
+@app.route("/students/<id_number>/delete", methods=["POST"])
 def delete_student( id_number):
     user = User.query.get_or_404(id_number)
     try:
