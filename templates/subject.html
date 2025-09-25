@@ -1,5 +1,10 @@
 {% extends "layout.html" %}
 {% block content %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='subject.css') }}">
+{% endblock %}
+
 <h2>Subjects</h2>
 
 <form method="post" class="card">

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Peer Review App{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; align-items: center; min-height: 60vh; text-align: center;">
+    <div style="max-width: 500px; padding: 40px;">
+        <!-- Success Animation -->
+        <div style="margin-bottom: 30px;">
+            <div style="width: 80px; height: 80px; background: linear-gradient(45deg, #28a745, #20c997); 
+                        border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; 
+                        justify-content: center; animation: pulse 2s infinite;">
+                <span style="font-size: 40px; color: white;">✅</span>
+            </div>
+        </div>
+        
+        <h2 style="color: #28a745; margin-bottom: 15px;">Review Complete! 🎉</h2>
+        
+        {% if current_user %}
+            <p style="color: #6c757d; margin-bottom: 25px;">
+                Thank you, <strong>{{ current_user }}</strong>! Your peer review has been submitted successfully.
+            </p>
+        {% endif %}
+        
+        <!-- Completion Summary -->
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 25px 0; 
+                    border-left: 4px solid #28a745;">
+            <strong style="color: #155724; display: block; margin-bottom: 10px;">✅ Completed Tasks:</strong>
+            <div style="font-size: 14px; color: #155724;">
+                ✓ Peer Reviews Submitted<br>
+                ✓ Self Assessment Completed
+            </div>
+        </div>
+        
+        <!-- Next Steps -->
+        <div style="background: #e8f4fd; padding: 20px; border-radius: 10px; margin: 25px 0; 
+                    border-left: 4px solid #007bff;">
+            <strong style="color: #004085; display: block; margin-bottom: 10px;">ℹ️ Next Steps:</strong>
+            <div style="font-size: 14px; color: #004085;">
+                • Wait for all team members to complete their reviews<br>
+                • Results will be available once everyone is finished<br>
+                • Check back or view the dashboard for updates
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div style="margin-top: 30px;">
+            <a href="{{ url_for('dashboard') }}" 
+               style="display: inline-block; background: #007bff; color: white; padding: 12px 25px; 
+                      text-decoration: none; border-radius: 8px; margin: 5px; font-weight: bold;
+                      transition: all 0.3s;">
+                📊 View Dashboard
+            </a>
+            <a href="{{ url_for('results') }}" 
+               style="display: inline-block; background: #28a745; color: white; padding: 12px 25px; 
+                      text-decoration: none; border-radius: 8px; margin: 5px; font-weight: bold;
+                      transition: all 0.3s;">
+                📈 Check Results
+            </a>
+        </div>
+        
+        <!-- Secondary Actions -->
+        <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #eee;">
+            <a href="{{ url_for('form') }}" 
+               style="color: #6c757d; text-decoration: none; font-size: 14px; margin-right: 15px;">
+                ✏️ Edit My Reviews
+            </a>
+            <a href="{{ url_for('index') }}" 
+               style="color: #6c757d; text-decoration: none; font-size: 14px;">
+                🔄 Start New Review
+            </a>
+        </div>
+        
+        <!-- Motivational Message -->
+        <div style="margin-top: 30px; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    border-radius: 10px; color: white; font-style: italic;">
+            "Great teams are built on honest feedback and continuous improvement. Thank you for contributing to your team's growth!"
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+    }
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+    }
+}
+
+a:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+}
+</style>
+{% endblock %}
