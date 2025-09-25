@@ -1,6 +1,12 @@
 {% extends "layout.html" %}
 {% block content %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='groups.css') }}">
+{% endblock %}
+
 <h2>Groups for {{ subject.name }}</h2>
+
 
 <form method="post" class="card">
   <label>New Group Name</label>
@@ -17,7 +23,9 @@
         <td>{{ g.name }}</td>
         <td>
           {% for m in g.members %}
-            {{ m.user.first_name }} {{ m.user.last_name }}<br>
+            {{ m.student_user.first_name }} {{ m.student_user.last_name }}<br>
+          {% else %}
+            No members yet
           {% endfor %}
         </td>
         <td>
@@ -34,13 +42,15 @@
 <form method="post" action="{{ url_for('add_student_to_group', subject_id=subject.id) }}" class="card">
   <label>Student</label>
   <select name="student_id" required>
+    <option value="">— Select Student —</option>
     {% for s in students %}
-      <option value="{{ s.id }}">{{ s.first_name }} {{ s.last_name }}</option>
+      <option value="{{ s.id }}">{{ s.first_name }} {{ s.last_name }} ({{ s.username }})</option>
     {% endfor %}
   </select>
 
   <label>Group</label>
   <select name="group_id" required>
+    <option value="">— Select Group —</option>
     {% for g in groups %}
       <option value="{{ g.id }}">{{ g.name }}</option>
     {% endfor %}
@@ -48,4 +58,7 @@
 
   <button type="submit">Add to Group</button>
 </form>
+
+<p><a href="{{ url_for('list_subjects') }}">← Back to Subjects</a></p>
+
 {% endblock %}

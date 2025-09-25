@@ -43,13 +43,15 @@
   {% else %}
     <p>No subjects available.</p>
   {% endfor %}
-</section>
 
-  <section class="cards">
      <div class="card" style="background-image: url('{{ url_for('static', filename='images/profile.jpg') }}');">
         <a href="{{ url_for('list_subjects') }}">Create Subjects</a>
      </div>
-  </section>
+
+     <div class="card" style="background-image: url('{{ url_for('static', filename='images/profile.jpg') }}');">
+        <a href="{{ url_for('manage_students') }}">Manage Students</a>
+     </div>
+</section>
 
 
   <h2>Settings</h2>
