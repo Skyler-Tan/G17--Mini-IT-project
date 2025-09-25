@@ -161,6 +161,9 @@ def manage_students():
                 flash(f"Error adding student: {e}", "error")
 
     students = User.query.filter_by(role="student").order_by(User.first_name).all()
+    for s in students:
+        for m in s.memberships:
+            print(f"Student: {s.first_name}, Group: {m.group.name}, Subject: {m.group.subject.name}")
     return render_template("students.html", students=students, subjects=subjects, groups=groups)
 
 @app.route("/students/<id_number>/delete", methods=["POST"])
@@ -195,7 +198,9 @@ def import_students():
         try:
             with open(path, newline='', encoding='utf-8-sig') as csvfile:
                 reader = csv.DictReader(csvfile)
+                print("CSV Headers:", reader.fieldnames)
                 for row in reader:
+                    print("Row data:", row)
                     first_name = (row.get("first_name") or "").strip()
                     last_name = (row.get("last_name") or "").strip()
                     email = (row.get("email") or "").strip()
@@ -226,6 +231,7 @@ def import_students():
         except Exception as e:
             db.session.rollback()
             flash(f"Error processing CSV: {e}", "error")
+            print(f"Error details: {e}")
         finally:
             try: os.remove(path)
             except: pass
