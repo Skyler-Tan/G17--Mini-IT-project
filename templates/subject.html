@@ -2,7 +2,7 @@
 {% block content %}
 <h2>Subjects</h2>
 
-<form method="post" class="card">
+<form method="post" action="{{ url_for('create_subject') }}" class="card">
   <label>New Subject</label>
   <input name="name" placeholder="e.g. CS101" required>
   <label>Lecturer</label>

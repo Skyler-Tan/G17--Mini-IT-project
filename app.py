@@ -31,27 +31,30 @@ def home():
     return redirect(url_for("list_subjects"))
 
 # ---------------- SUBJECT ---------------- #
-@app.route("/subjects", methods=["GET", "POST"])
+@app.route("/subjects", methods=["GET"])
 def list_subjects():
-    if request.method == "POST":
-        name = (request.form.get("name") or "").strip()
-        lecturer_id = int(request.form.get("lecturer_id") or 0)
-        if not name or not lecturer_id:
-            flash("Subject name and lecturer required", "error")
-        else:
-            try:
-                s = Subject(name=name, lecturer_id=lecturer_id)
-                db.session.add(s)
-                db.session.commit()
-                flash("Subject created", "success")
-                return redirect(url_for("list_subjects"))
-            except Exception as e:
-                db.session.rollback()
-                flash(f"Error creating subject: {e}", "error")
-
     subjects = Subject.query.order_by(Subject.name).all()
     lecturer = User.query.filter_by(role="lecturer").order_by(User.first_name).all()
     return render_template("subject.html", subjects=subjects, lecturer=lecturer)
+
+@app.route("/subjects/create", methods=["POST"])
+def create_subject():
+    name = (request.form.get("name") or "").strip()
+    lecturer_id = int(request.form.get("lecturer_id") or 0)
+    print(f"Creating subject: {name}, lecturer_id: {lecturer_id}")
+    if not name or not lecturer_id:
+        flash("Subject name and lecturer required", "error")
+    else:
+        try:
+            s = Subject(name=name, lecturer_id=lecturer_id)
+            db.session.add(s)
+            db.session.commit()
+            flash("Subject created", "success")
+            return redirect(url_for("list_subjects"))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error creating subject: {e}", "error")
+    return redirect(url_for("list_subjects"))
 
 @app.route("/subjects/<int:subject_id>/delete", methods=["POST"])
 def delete_subject(subject_id):
@@ -64,7 +67,6 @@ def delete_subject(subject_id):
         db.session.rollback()
         flash(f"Error deleting subject: {e}", "error")
     return redirect(url_for("list_subjects"))
-
 # ---------------- GROUP ---------------- #
 @app.route("/subjects/<int:subject_id>/groups", methods=["GET", "POST"])
 def manage_groups(subject_id):
