@@ -14,7 +14,7 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 from flask_migrate import Migrate
 from config import Config
-from models import db, User, Subject, Group, GroupMember, PeerReview, Setting
+from models import db, User, Subject, Group, Anonymous_Reviews, GroupMember, PeerReview, Setting
 import secrets
 from dotenv import load_dotenv
 
