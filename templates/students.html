@@ -1,14 +1,15 @@
 {% extends "layout.html" %}
+{% block content %}
+
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='students.css') }}">
 {% endblock %}
 
-{% block content %}
 <h2>Students</h2>
 
 <div class="student-page">
-  <!-- Left: Form -->
+  <!-- Add Student Form -->
   <form method="post" class="card">
     <div class="grid">
       <div>
@@ -53,42 +54,34 @@
     <button type="submit">Add Student</button>
   </form>
 
-  <!-- Right: Table -->
-  <div class="student-table">
-    <table>
-      <thead>
+  <!-- Students Table -->
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>Name</th><th>Email</th><th>Username</th><th>Subject</th><th>Group</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in students %}
         <tr>
-          <th>ID</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Username</th>
-          <th>Subject</th>
-          <th>Group</th>
-          <th>Actions</th>
+          <td>{{ s.id }}</td>
+          <td>{{ s.first_name }} {{ s.last_name }}</td>
+          <td>{{ s.email }}</td>
+          <td>{{ s.username }}</td>
+          <td>{{ s.subjects|length }}</td>
+          <td>
+            {% for m in s.memberships %}
+              {{ m.group.name }}<br>
+            {% endfor %}
+          </td>
+          <td>
+            <form method="post" action="{{ url_for('delete_student', id_number=s.id_number) }}" onsubmit="return confirm('Remove student?');">
+              <button type="submit">Delete</button>
+            </form>
+          </td>
         </tr>
-      </thead>
-      <tbody>
-        {% for s in students %}
-          <tr>
-            <td>{{ s.id }}</td>
-            <td>{{ s.first_name }} {{ s.last_name }}</td>
-            <td>{{ s.email }}</td>
-            <td>{{ s.username }}</td>
-            <td>{{ s.subjects|length }}</td>
-            <td>
-              {% for m in s.memberships %}
-                {{ m.group.name }}<br>
-              {% endfor %}
-            </td>
-            <td>
-              <form method="post" action="{{ url_for('delete_student', student_id=s.id) }}" onsubmit="return confirm('Remove student?');">
-                <button type="submit">Delete</button>
-              </form>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 {% endblock %}

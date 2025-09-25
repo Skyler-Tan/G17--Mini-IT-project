@@ -18,7 +18,7 @@ from models import db, User, Subject, Group, GroupMember, PeerReview, Setting
 import secrets
 from dotenv import load_dotenv
 
-#Isyraf
+
 # ---------------- Flask app setup ---------------- #
 ALLOWED_EXT = {"csv"}
 def allowed_file(filename):
@@ -39,25 +39,18 @@ migrate = Migrate()
 migrate.init_app(app, db)
 
 # ---------------- ROUTES ---------------- #
-
+#Isyraf
 # ---------------- SUBJECT ---------------- #
 @app.route("/subjects", methods=["GET", "POST"])
 def list_subjects():
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
-        
-        # If lecturer, automatically assign lecturer_id
-        if current_user.role == "lecturer":
-            lecturer_id = current_user.id_number
-        else:
-            # Admin or other roles need to select a teacher
-            lecturer_id = int(request.form.get("student_id") or 0)
-        
+        lecturer_id = int(request.form.get("lecturer_id") or 0)
         if not name or not lecturer_id:
-            flash("Subject and lecturer name required", "error")
+            flash("Subject name and lecturer required", "error")
         else:
             try:
-                s = Subject(name=name, id_number=id_number)
+                s = Subject(name=name, lecturer_id=lecturer_id)
                 db.session.add(s)
                 db.session.commit()
                 flash("Subject created", "success")
@@ -67,8 +60,8 @@ def list_subjects():
                 flash(f"Error creating subject: {e}", "error")
 
     subjects = Subject.query.order_by(Subject.name).all()
-    teachers = User.query.filter_by(role="lecturer").order_by(User.first_name).all()
-    return render_template("subject.html", subjects=subjects)
+    lecturer = User.query.filter_by(role="lecturer").order_by(User.first_name).all()
+    return render_template("subject.html", subjects=subjects, lecturer=lecturer)
 
 @app.route("/subjects/<int:subject_id>/delete", methods=["POST"])
 def delete_subject(subject_id):
@@ -83,10 +76,6 @@ def delete_subject(subject_id):
     return redirect(url_for("list_subjects"))
 
 # ---------------- GROUP ---------------- #
-@app.route("/groups")
-def groups():
-    return render_template("groups.html")
-
 @app.route("/subjects/<int:subject_id>/groups", methods=["GET", "POST"])
 def manage_groups(subject_id):
     subj = Subject.query.get_or_404(subject_id)
@@ -106,7 +95,25 @@ def manage_groups(subject_id):
                 flash(f"Error creating group: {e}", "error")
 
     groups = Group.query.filter_by(subject_id=subject_id).order_by(Group.name).all()
-    return render_template("groups.html", subj=subj, groups=groups)
+    students = User.query.filter_by(role="student").all()
+    return render_template("groups.html", subject=subj, groups=groups, students=students)
+
+@app.route("/subjects/<int:subject_id>/add_student_to_group", methods=["POST"])
+def add_student_to_group(subject_id):
+    student_id = (request.form.get("student_id") or 0)
+    group_id = int(request.form.get("group_id") or 0)
+    if student_id and group_id:
+        try:
+            membership = GroupMember(group_id=group_id, id_number=student_id)
+            db.session.add(membership)
+            db.session.commit()
+            flash("Student added to group", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error adding student to group: {e}", "error")
+    return redirect(url_for("manage_groups", subject_id=subject_id))
+
+     
 
 @app.route("/groups/<int:group_id>/delete", methods=["POST"])
 def delete_group(group_id):
@@ -153,7 +160,7 @@ def manage_students():
 
                 # Add to group if selected
                 if group_id:
-                    membership = GroupMember(group_id=group_id, student_id=user.id)
+                    membership = GroupMember(group_id=group_id,  id_number=user.id)
                     db.session.add(membership)
                     db.session.commit()
 
@@ -166,9 +173,9 @@ def manage_students():
     students = User.query.filter_by(role="student").order_by(User.first_name).all()
     return render_template("students.html", students=students, subjects=subjects, groups=groups)
 
-@app.route("/students/<int:student_id>/delete", methods=["POST"])
-def delete_student(student_id):
-    user = User.query.get_or_404(student_id)
+@app.route("/students/<id_number>/delete", methods=["POST"])
+def delete_student( id_number):
+    user = User.query.get_or_404(id_number)
     try:
         db.session.delete(user)
         db.session.commit()
@@ -220,7 +227,7 @@ def import_students():
 
                     group_id = int(row.get("group_id") or 0) or None
                     if group_id:
-                        membership = GroupMember(group_id=group_id, student_id=user.id)
+                        membership = GroupMember(group_id=group_id, id_number=user.id)
                         db.session.add(membership)
 
                     inserted += 1
@@ -284,8 +291,6 @@ def manage_settings():
             flash(f"Error updating settings: {e}", "error")
 
     return render_template("settings.html", setting=setting)
-
-# ---------------- MAIN ---------------- #
 
 #THANISH
 
