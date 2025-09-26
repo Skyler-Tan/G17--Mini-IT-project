@@ -7,7 +7,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, mak
 from flask_migrate import Migrate
 from config import Config
 from models import db, User, Subject, Group, GroupMember, PeerReview, SelfAssessment, AnonymousReview, Setting
-
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 # ---------------- Flask app setup ---------------- #
 ALLOWED_EXT = {"csv"}
 def allowed_file(filename):
@@ -24,6 +24,14 @@ db.init_app(app)
 migrate = Migrate()
 migrate.init_app(app, db)
 
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 # ---------------- ROUTES ---------------- #
 
 @app.route("/")
@@ -32,7 +40,11 @@ def home():
 
 # ---------------- SUBJECT ---------------- #
 @app.route("/subjects", methods=["GET"])
+@login_required
 def list_subjects():
+    if current_user.role != "Lecturer":
+        flash("Access denied: Lecturers only", "error")
+        return redirect(url_for("home"))
     subjects = Subject.query.order_by(Subject.name).all()
     lecturer = User.query.filter_by(role="lecturer").order_by(User.first_name).all()
     return render_template("subject.html", subjects=subjects, lecturer=lecturer)
@@ -69,8 +81,14 @@ def delete_subject(subject_id):
     return redirect(url_for("list_subjects"))
 # ---------------- GROUP ---------------- #
 @app.route("/subjects/<int:subject_id>/groups", methods=["GET", "POST"])
+@login_required
 def manage_groups(subject_id):
-    subj = Subject.query.get_or_404(subject_id)
+    if current_user.role != "Lecturer":
+        flash("Access denied: Lecturers only", "error")
+        return redirect(url_for("home"))
+    
+    subj = Subject.query.filter_by(id=subject_id, lecturer_id=current_user.id).first_or_404()
+
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
         if not name:
@@ -87,14 +105,49 @@ def manage_groups(subject_id):
                 flash(f"Error creating group: {e}", "error")
 
     groups = Group.query.filter_by(subject_id=subject_id).order_by(Group.name).all()
-    students = User.query.filter_by(role="student").all()
-    return render_template("groups.html", subject=subj, groups=groups, students=students)
+    group_ids = [g.id for g in groups]
+    students_in_groups = User.query.join(GroupMember).filter(
+        GroupMember.group_id.in_(group_ids),
+        User.role == "student"
+    ).order_by(User.first_name).all() if group_ids else []
+
+    available_students = User.query.filter_by(role="student").outerjoin(
+        GroupMember, (GroupMember.id_number == User.id) & (GroupMember.group_id.in_(group_ids))
+    ).filter(GroupMember.id == None).order_by(User.first_name).all()
+
+    print("subject:", subj)
+    print("groups:", groups)
+    return render_template("groups.html", subject=subj, groups=groups, students=available_students)
 
 @app.route("/subjects/<int:subject_id>/add_student_to_group", methods=["POST"])
+@login_required
 def add_student_to_group(subject_id):
+    if current_user.role != "Lecturer":
+        flash("Access denied: Lecturers only", "error")
+        return redirect(url_for("home")) 
+    
+    subj = Subject.query.filter_by(id=subject_id, lecturer_id=current_user.id).first_or_404()
     student_id = (request.form.get("student_id") or 0)
     group_id = int(request.form.get("group_id") or 0)
-    if student_id and group_id:
+    if student_id or not group_id:
+        flash("Student and Group required", "error")
+        return redirect(url_for("manage_groups", subject_id=subject_id))
+    
+    group = Group.query.filter_by(id=group_id, subject_id=subject_id).first()
+    if not group:
+        flash("Invalid group", "error")
+        return redirect(url_for("manage_groups", subject_id=subject_id))
+    
+    student = User.query.filter_by(id=student_id, role="student").first()
+    if not student:
+        flash("Invalid student", "error")
+        return redirect(url_for("manage_groups", subject_id=subject_id))
+    
+    existing_membership = GroupMember.query.filter_by(group_id=group_id, id_number=student_id).first()
+    if existing_membership:
+        flash("Student already in group", "error")
+        return redirect(url_for("manage_groups", subject_id=subject_id))
+    
         try:
             membership = GroupMember(group_id=group_id, id_number=student_id)
             db.session.add(membership)
@@ -122,9 +175,25 @@ def delete_group(group_id):
 
 # ---------------- STUDENTS / USERS ---------------- #
 @app.route("/students", methods=["GET", "POST"])
+@login_required
 def manage_students():
-    subjects = Subject.query.order_by(Subject.name).all()
-    groups = Group.query.order_by(Group.name).all()
+    if current_user.role != "Lecturer":
+        flash("Access denied: Lecturers only", "error")
+        return redirect(url_for("home"))
+    # Dapatkan subjek pensyarah
+    subjects = Subject.query.filter_by(lecturer_id=current_user.id).order_by(Subject.name).all()
+    subject_ids = [s.id for s in subjects]
+
+    # Dapatkan kumpulan di bawah subjek tersebut
+    groups = Group.query.filter(Group.subject_id.in_(subject_ids)).order_by(Group.name).all()
+    group_ids = [g.id for g in groups]
+
+    # Dapatkan pelajar dalam kumpulan tersebut
+    students = User.query.join(GroupMember).filter(
+        GroupMember.group_id.in_(group_ids),
+        User.role == "student"
+    ).order_by(User.first_name).all() if group_ids else []
+
     if request.method == "POST":
         first_name = (request.form.get("first_name") or "").strip()
         last_name = (request.form.get("last_name") or "").strip()
@@ -134,6 +203,10 @@ def manage_students():
         role = "student"
         subject_id = int(request.form.get("subject_id") or 0) or None
         group_id = int(request.form.get("group_id") or 0) or None
+
+        if subject_id and subject_id not in subject_ids:
+            flash("Anda hanya boleh menambah pelajar ke subjek anda sendiri", "error")
+            return redirect(url_for("manage_students"))
 
         if not first_name or not last_name or not email or not username or not password:
             flash("All fields are required", "error")
@@ -150,8 +223,8 @@ def manage_students():
                 db.session.add(user)
                 db.session.commit()
 
-                # Add to group if selected
-                if group_id:
+               
+                if group_id and group_id in group_ids:
                     membership = GroupMember(group_id=group_id,  id_number=user.id)
                     db.session.add(membership)
                     db.session.commit()
@@ -182,7 +255,12 @@ def delete_student( id_number):
 
 # ---------------- IMPORT CSV ---------------- #
 @app.route("/students/import", methods=["GET", "POST"])
+@login_required
 def import_students():
+    if current_user.role != "Lecturer":
+        flash("Access denied: Lecturers only", "error")
+        return redirect(url_for("home"))
+      
     if request.method == "POST":
         f = request.files.get("file")
         if not f or f.filename == "":
@@ -191,6 +269,8 @@ def import_students():
         if not allowed_file(f.filename):
             flash("Only .csv allowed", "error")
             return redirect(url_for("import_students"))
+        subject_ids = [s.id for s in Subject.query.filter_by(lecturer_id=current_user.id).all()]
+        valid_group_ids = [g.id for g in Group.query.filter(Group.subject_id.in_(subject_ids)).all()]
 
         filename = secure_filename(f.filename)
         path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -223,9 +303,12 @@ def import_students():
                     db.session.flush()  # get user.id for group
 
                     group_id = int(row.get("group_id") or 0) or None
-                    if group_id:
+                    if group_id and group_id in valid_group_ids:
                         membership = GroupMember(group_id=group_id, id_number=user.id)
                         db.session.add(membership)
+                    elif group_id:
+                        skipped += 1
+                        continue
 
                     inserted += 1
                 db.session.commit()
