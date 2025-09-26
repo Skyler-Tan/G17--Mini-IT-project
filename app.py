@@ -503,7 +503,18 @@ def lecturer_profile():
         flash("Profile updated successfully!", "success")
     
     return render_template("lecturer_profile.html", user=current_user)
+def get_assigned_subjects(student_id):
+    group_ids = db.session.query(GroupMember.group_id).filter_by(id_number=student_id).subquery()
 
+    subjects = (
+        db.session.query(Subject)
+        .join(Group, Subject.id == Group.subject_id)
+        .filter(Group.id.in_(group_ids))
+        .distinct()
+        .all()
+    )
+
+    return subjects
 
 
 #SkylerTan
