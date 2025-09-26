@@ -47,6 +47,16 @@ form.card button:hover {
   background: #3154b5;
 }
 
+form.card select {
+  padding: 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  background-color: #fff;
+  color: #333;
+}
+
+
 /* Subjects Table */
 table {
   width: 100%;

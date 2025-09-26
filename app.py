@@ -41,27 +41,36 @@ migrate.init_app(app, db)
 # ---------------- ROUTES ---------------- #
 #Isyraf
 # ---------------- SUBJECT ---------------- #
-@app.route("/subjects", methods=["GET", "POST"])
+@app.route("/subjects", methods=["GET"])
 def list_subjects():
-    if request.method == "POST":
-        name = (request.form.get("name") or "").strip()
-        lecturer_id = int(request.form.get("lecturer_id") or 0)
-        if not name or not lecturer_id:
-            flash("Subject name and lecturer required", "error")
-        else:
-            try:
-                s = Subject(name=name, lecturer_id=lecturer_id)
-                db.session.add(s)
-                db.session.commit()
-                flash("Subject created", "success")
-                return redirect(url_for("list_subjects"))
-            except Exception as e:
-                db.session.rollback()
-                flash(f"Error creating subject: {e}", "error")
-
     subjects = Subject.query.order_by(Subject.name).all()
     lecturer = User.query.filter_by(role="lecturer").order_by(User.first_name).all()
     return render_template("subject.html", subjects=subjects, lecturer=lecturer)
+
+@app.route("/subjects/create", methods=["POST"])
+@login_required
+def create_subject():
+    if current_user.role != "lecturer":
+        flash("Only lecturers can create subjects", "danger")
+        return redirect(url_for("dashboard"))
+
+    name = (request.form.get("name") or "").strip()
+    lecturer_id = request.form.get("lecturer_id")
+
+    if not name or not lecturer_id:
+        flash("Subject name and lecturer are required", "error")
+    else:
+        try:
+            s = Subject(name=name, lecturer_id=int(lecturer_id))
+            db.session.add(s)
+            db.session.commit()
+            flash("Subject created", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error creating subject: {e}", "error")
+
+    return redirect(url_for("dashboard"))
+
 
 @app.route("/subjects/<int:subject_id>/delete", methods=["POST"])
 def delete_subject(subject_id):
@@ -127,6 +136,24 @@ def delete_group(group_id):
         db.session.rollback()
         flash(f"Error deleting group: {e}", "error")
     return redirect(url_for("manage_groups", subject_id=subject_id))
+
+
+
+
+@app.route("/subjects/<int:subject_id>/groups/view", methods=["GET"])
+@login_required
+def view_groups(subject_id):
+    subject = Subject.query.get_or_404(subject_id)
+    groups = Group.query.filter_by(subject_id=subject_id).order_by(Group.name).all()
+
+    # Assuming you have a PeerReview model linked to groups
+    peer_reviews = {}
+    for group in groups:
+        reviews = PeerReview.query.filter_by(group_id=group.id).all()
+        peer_reviews[group.id] = reviews
+
+    return render_template("view_groups.html", subject=subject, groups=groups, peer_reviews=peer_reviews)
+
 
 # ---------------- STUDENTS / USERS ---------------- #
 @app.route("/students", methods=["GET", "POST"])
@@ -408,16 +435,25 @@ def login():
 @login_required
 def dashboard():
     if current_user.role == "student":
-        return render_template('student_dashboard.html', user=current_user, current_year=datetime.now().year)
-    elif current_user.role == "lecturer":
-        if current_user.gender.lower() == "male":
-            prefix = "Mr."
-        else:
-            prefix = "Ms."
-
         subjects = Subject.query.order_by(Subject.name).all()
-        
-        return render_template('lecturer_dashboard.html', user=current_user, prefix=prefix, current_year=datetime.now().year, subjects=subjects)
+        return render_template(
+            'dashboard.html',
+            user=current_user,
+            current_year=datetime.now().year,
+            subjects=subjects
+        )
+
+    elif current_user.role == "lecturer":
+        subjects = Subject.query.filter_by(lecturer_id=current_user.id).order_by(Subject.name).all()
+        prefix = "Mr." if current_user.gender.lower() == "male" else "Ms."
+        return render_template(
+            'dashboard.html',
+            user=current_user,
+            prefix=prefix,
+            current_year=datetime.now().year,
+            subjects=subjects
+        )
+
     else:
         flash("Role is not recognized", "danger")
         return redirect(url_for("logout"))
