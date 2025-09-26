@@ -45,12 +45,16 @@ def list_subjects():
     if current_user.role != "Lecturer":
         flash("Access denied: Lecturers only", "error")
         return redirect(url_for("home"))
-    subjects = Subject.query.order_by(Subject.name).all()
+    subjects = Subject.query.filter_by(lecturer_id=current_user.id).order_by(Subject.name).all()
     lecturer = User.query.filter_by(role="lecturer").order_by(User.first_name).all()
     return render_template("subject.html", subjects=subjects, lecturer=lecturer)
 
 @app.route("/subjects/create", methods=["POST"])
+@login_required
 def create_subject():
+    if current_user.role != "Lecturer":
+        flash("Access denied: Lecturers only", "error")
+        return redirect(url_for("home"))
     name = (request.form.get("name") or "").strip()
     lecturer_id = int(request.form.get("lecturer_id") or 0)
     print(f"Creating subject: {name}, lecturer_id: {lecturer_id}")
@@ -58,7 +62,7 @@ def create_subject():
         flash("Subject name and lecturer required", "error")
     else:
         try:
-            s = Subject(name=name, lecturer_id=lecturer_id)
+            s = Subject(name=name, lecturer_id=current_user.id)
             db.session.add(s)
             db.session.commit()
             flash("Subject created", "success")
@@ -69,8 +73,9 @@ def create_subject():
     return redirect(url_for("list_subjects"))
 
 @app.route("/subjects/<int:subject_id>/delete", methods=["POST"])
+@login_required
 def delete_subject(subject_id):
-    subj = Subject.query.get_or_404(subject_id)
+    subj = Subject.query.filter_by(id=subject_id, lecturer_id=current_user.id).first_or_404()
     try:
         db.session.delete(subj)
         db.session.commit()
@@ -146,8 +151,8 @@ def add_student_to_group(subject_id):
     existing_membership = GroupMember.query.filter_by(group_id=group_id, id_number=student_id).first()
     if existing_membership:
         flash("Student already in group", "error")
-        return redirect(url_for("manage_groups", subject_id=subject_id))
-    
+        return redirect(url_for("manage_groups", subject_id=subject_id))    
+    else:
         try:
             membership = GroupMember(group_id=group_id, id_number=student_id)
             db.session.add(membership)
@@ -183,8 +188,6 @@ def manage_students():
     # Dapatkan subjek pensyarah
     subjects = Subject.query.filter_by(lecturer_id=current_user.id).order_by(Subject.name).all()
     subject_ids = [s.id for s in subjects]
-
-    # Dapatkan kumpulan di bawah subjek tersebut
     groups = Group.query.filter(Group.subject_id.in_(subject_ids)).order_by(Group.name).all()
     group_ids = [g.id for g in groups]
 
