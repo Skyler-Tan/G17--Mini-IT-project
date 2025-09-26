@@ -1,29 +1,67 @@
+/* Container for form + table */
 .student-page {
   display: flex;
   gap: 2rem;
   align-items: flex-start;
 }
 
-/* Form */
+/* Form card */
 form.card {
   background: #fff;
   padding: 1.5rem;
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  flex: 0 0 300px; /* fixed width */
+  width: 300px;   /* ✅ fix width */
+  flex-shrink: 0; /* ✅ don't let it shrink */
 }
 
-/* Right side */
+form.card label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: #333;
+}
+
+form.card input,
+form.card select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+form.card button {
+  margin-top: 0.5rem;
+  padding: 0.6rem;
+  background: #3b82f6;
+  color: white;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out;
+}
+
+form.card button:hover {
+  background: #2563eb;
+}
+
+/* --- Right side: Table + Header --- */
 .students-section {
   flex: 1; /* takes full remaining space */
 }
 
-/* Header with Import button */
 .students-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+}
+
+.students-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
 }
 
 .import-btn {
@@ -33,42 +71,72 @@ form.card {
   border-radius: 8px;
   text-decoration: none;
   font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .import-btn:hover {
   background: #2563eb;
 }
 
-/* Table */
+/* Table container */
 .table-container {
-  max-height: 500px;
-  overflow-y: auto;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  flex: 1; /* ✅ take remaining space */
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  overflow-x: auto; /* ✅ horizontal scroll if too wide */
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
+  font-size: 0.9rem;
 }
 
 th, td {
   padding: 0.75rem;
   text-align: left;
-  border-bottom: 1px solid #eee;
+  border: 1px solid #ddd;
 }
 
 th {
-  background: #f9fafb;
+  background: #f3f4f6;
+  font-weight: 600;
 }
 
+/* Alternate row coloring */
+tbody tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+/* Delete button inside table */
+td form button {
+  padding: 5px 10px;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+td form button:hover {
+  background: #c0392b;
+}
+
+/* --- Responsive --- */
 @media (max-width: 768px) {
   .student-page {
     flex-direction: column;
   }
 
-  .student-table {
-    min-width: 100%;
+  form.card {
+    width: 100%;
+  }
+
+  .students-section {
+    width: 100%;
   }
 }
 

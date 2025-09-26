@@ -80,12 +80,12 @@ body {
   height: 80px;
 }
 
-/* Main Content */
 main {
   flex: 1;
   padding: 2rem;
-  max-width: 1000px;
   margin: 0 auto;
+  max-width: none;   /* remove width cap */
+  width: 100%;       /* stretch across */
 }
 
 /* Footer */

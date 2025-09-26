@@ -7,66 +7,79 @@
 {% endblock %}
 
 {% block content %}
- <header class="topbar">
-   <div class="logo-area">
+<header class="topbar">
+  <div class="logo-area">
     <img src="{{ url_for('static', filename='uni_logo-removebg-preview.png') }}" alt="University Logo">
-   </div>
- </header>
+  </div>
+</header>
 
- <main class="dashboard-main">
-   <h1>Student Peer Review System</h1>
-   <h2>Welcome, {{ prefix }} {{ user.first_name }}!</h2>
+<main class="dashboard-main">
+  <h1>Student Peer Review System</h1>
+  <h2>Welcome, {{ prefix }} {{ user.first_name }}!</h2>
 
-    {% if user.role == "lecturer" %}
+  {% if user.role == "lecturer" %}
+  <!-- Subjects Section -->
+  <div class="section">
     <h2>Subjects</h2>
-    <section class="cards">
-     {% for subject in subjects %}
+    <div class="cards">
+      {% for subject in subjects %}
       <div class="card">
         <h3>{{ subject.name }}</h3>
         <p><a href="{{ url_for('manage_groups', subject_id=subject.id) }}">Assign Groups</a></p>
         <p><a href="{{ url_for('view_groups', subject_id=subject.id) }}">View Groups</a></p>
       </div>
-     {% else %}
-       <p>No subjects created yet.</p>
-     {% endfor %}
-   </section>
-
-  <h2>Lecturer Tools</h2>
-  <section class="cards">
-    <div class="card">
-      <a href="{{ url_for('list_subjects') }}">Create New Subject</a>
+      {% else %}
+      <p>No subjects created yet.</p>
+      {% endfor %}
     </div>
-    <div class="card">
-      <a href="{{ url_for('manage_students') }}">Manage Students</a>
-    </div>
-  </section>
-{% endif %}
+  </div>
 
-{% if user.role == "student" %}
-  <h2>Subjects</h2>
-  <section class="cards">
-    {% for subject in assigned_subjects %}
+  <!-- Lecturer Tools Section -->
+  <div class="section">
+    <h2>Lecturer Tools</h2>
+    <div class="cards">
+      <div class="card">
+        <a href="{{ url_for('list_subjects') }}">Create New Subject</a>
+      </div>
+      <div class="card">
+        <a href="{{ url_for('manage_students') }}">Manage Students</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if user.role == "student" %}
+  <!-- Student Subjects Section -->
+  <div class="section">
+    <h2>Subjects</h2>
+    <div class="cards">
+      {% for subject in assigned_subjects %}
       <div class="card">
         <h3>{{ subject.name }}</h3>
         <p><a href="{{ url_for('start_peer_review', subject_id=subject.id) }}">Start Peer Review</a></p>
       </div>
-    {% else %}
+      {% else %}
       <p>No subjects assigned yet.</p>
-    {% endfor %}
-  </section>
-{% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 
- <h2>Settings</h2>
-  <section class="cards">
-    <div class="card">
-      <a href="{{ url_for('profile') }}">My Profile</a>
+  <!-- Settings Section -->
+  <div class="section">
+    <h2>Settings</h2>
+    <div class="cards">
+      <div class="card">
+        <a href="{{ url_for('profile') }}">My Profile</a>
+      </div>
+      <div class="card">
+        <a href="{{ url_for('change_password') }}">Change Password</a>
+      </div>
+      <div class="card">
+        <a href="{{ url_for('logout') }}">Logout</a>
+      </div>
     </div>
-    <div class="card">
-      <a href="{{ url_for('change_password') }}">Change Password</a>
-    </div>
-    <div class="card">
-      <a href="{{ url_for('logout') }}">Logout</a>
-    </div>
-  </section>
-  </main>
-  {% endblock %}
+  </div>
+</main>
+{% endblock %}
+
