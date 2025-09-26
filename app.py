@@ -436,11 +436,13 @@ def login():
 def dashboard():
     if current_user.role == "student":
         subjects = Subject.query.order_by(Subject.name).all()
-        return render_template(
+        assigned_subjects = get_assigned_subjects(current_user.id)
+        return render_template (
             'dashboard.html',
             user=current_user,
             current_year=datetime.now().year,
-            subjects=subjects
+            subjects=subjects,
+            assigned_subjects=assigned_subjects
         )
 
     elif current_user.role == "lecturer":
@@ -505,6 +507,22 @@ def lecturer_profile():
     return render_template("lecturer_profile.html", user=current_user)
 
 
+def get_assigned_subjects(student_id):
+    group_ids = db.session.query(GroupMember.group_id).filter_by(id_number=student_id).subquery()
+
+    subjects = (
+        db.session.query(Subject)
+        .join(Group, Subject.id == Group.subject_id)
+        .filter(Group.id.in_(group_ids))
+        .distinct()
+        .all()
+    )
+
+    return subjects
+
+
+
+
 
 #SkylerTan
 # ----- Student list from DB (table: user) - EXCLUDE lecturers -----
@@ -559,7 +577,7 @@ def get_completion_status(students):
 def index():
     return redirect(url_for("login"))
 
-@app.route("/start_peer_review")
+@app.route("/start_peer_review/<int:subject_id>")
 @login_required
 def start_peer_review():
     """Clear session and start fresh peer review"""
@@ -570,6 +588,8 @@ def start_peer_review():
     # Clear any existing session data
     session.pop("current_user", None)
     
+    session["subject_id"] = subject_id
+
     return redirect(url_for('peer_review'))
 
 # 2. Modify the existing peer_review route to clear session when needed
