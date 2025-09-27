@@ -1,10 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Peer Review App{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
-{% endblock %}
+{% block title %}Peer Review Results - Peer Review App{% endblock %}
 
 {% block content %}
 <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
@@ -12,197 +8,200 @@
     <div style="background: #e8f4fd; border: 1px solid #b3d9ff; border-radius: 8px; padding: 10px; margin: 10px 0; text-align: center;">
         <strong>Subject:</strong> {{ subject.name }} | <strong>Group:</strong> {{ group.name }}
     </div>
-    <br>
-    
+
     <!-- Group Summary -->
-    <div style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-        <h4 style="margin: 0 0 10px 0; color: #333;">Group Summary</h4>
-        <p style="margin: 5px 0;"><strong>Total Students:</strong> {{ group_students|length }} | 
-           <strong>Reviews Completed:</strong> {{ completed_count }}/{{ group_students|length }} | 
-           <strong>Status:</strong> 
-           {% if all_completed %}
-               <span style="color: #28a745;">Complete ✓</span>
-           {% else %}
-               <span style="color: #dc3545;">In Progress ⏳</span>
-           {% endif %}
+    <div style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
+        <p>
+            <strong>Total Students:</strong> {{ group_students|length }} |
+            <strong>Reviews Completed:</strong> {{ completed_count }}/{{ group_students|length }} |
+            <strong>Status:</strong>
+            {% if all_completed %}
+                <span style="color: #28a745;">Complete ✓</span>
+            {% else %}
+                <span style="color: #dc3545;">In Progress ⏳</span>
+            {% endif %}
         </p>
     </div>
-    
-    <!-- TABLE 1: MAIN RESULTS TABLE -->
-    <div style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px;">
-        <table class="results-table" style="width: 100%; border-collapse: collapse; text-align: center;">
-            <caption style="caption-side: top; text-align: left; padding: 8px 0; color: #6c757d;">
-                Peer Review Results for {{ group.name }}
-            </caption>
-            <thead style="background-color: #f8f9fa;">
-                <tr>
-                    <th scope="col" style="padding: 10px; border: 1px solid #ddd;">Student</th>
-                    {% if all_completed %}
-                        <th scope="col" style="padding: 10px; border: 1px solid #ddd;">Avg Peer Score</th>
-                        <th scope="col" style="padding: 10px; border: 1px solid #ddd;">Final Mark</th>
+
+    <!-- Results Table -->
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <thead style="background: #f8f9fa;">
+            <tr>
+                <th style="border: 1px solid #ddd; padding: 10px;">Student</th>
+                <th style="border: 1px solid #ddd; padding: 10px;">Avg Peer Score</th>
+                <th style="border: 1px solid #ddd; padding: 10px;">Final Mark</th>
+                <th style="border: 1px solid #ddd; padding: 10px;">Comments</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in group_students %}
+            {% set student_results = results[student.id] %}
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 10px;"><strong>{{ student.first_name }} {{ student.last_name }}</strong></td>
+                <td style="border: 1px solid #ddd; padding: 10px;">
+                    {% if all_completed and student_results.avg_score %}
+                        {{ student_results.avg_score|round(2) }}/5
+                    {% else %}
+                        <em style="color: #999;">-</em>
                     {% endif %}
-                    <th scope="col" style="padding: 10px; border: 1px solid #ddd;">Peer Comments</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for student in group_students %}
-                {% set student_results = results[student.id] if results else {} %}
-                <tr>
-                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>{{ student.full_name }}</strong></td>
-                    {% if all_completed %}
-                        <td style="padding: 10px; border: 1px solid #ddd;">
-                            {% if student_results.avg_score is not none %}
-                                <span style="color: #28a745; font-weight: bold;">{{ student_results.avg_score|round(2) }}/5</span>
-                            {% else %}
-                                <em style="color: #999;">N/A</em>
-                            {% endif %}
-                        </td>
-                        <td style="padding: 10px; border: 1px solid #ddd;">
-                            {% if student_results.final_mark is not none %}
-                                <span style="color: #007bff; font-weight: bold;">{{ student_results.final_mark }}/100</span>
-                            {% else %}
-                                <em style="color: #999;">N/A</em>
-                            {% endif %}
-                        </td>
+                </td>
+                <td style="border: 1px solid #ddd; padding: 10px;">
+                    {% if all_completed and student_results.final_mark %}
+                        {{ student_results.final_mark }}/100
+                    {% else %}
+                        <em style="color: #999;">-</em>
                     {% endif %}
-                    <td style="padding: 10px; border: 1px solid #ddd; text-align: left; max-width: 400px;">
-                        {% if current_user.full_name == student.full_name or current_user.role == "lecturer" %}
-                            {% if all_completed %}
-                                {% if student_results.comments %}
-                                    {% for comment in student_results.comments %}
-                                        <div style="margin-bottom: 10px; padding: 8px; background: #f8f9fa; border-left: 3px solid #007bff; border-radius: 4px;">
-                                            <strong>{{ comment.reviewer }}:</strong> 
-                                            <span style="white-space: pre-wrap; overflow-wrap: anywhere;">{{ comment.comment|replace('\n','<br>')|safe }}</span>
-                                        </div>
-                                    {% endfor %}
-                                {% else %}
-                                    <em style="color: #999;">No comments received from peers.</em>
-                                {% endif %}
-                            {% else %}
-                                <em style="color: #999;">Comments will appear once all reviews are completed.</em>
-                            {% endif %}
-                        {% else %}
-                            <em style="color: #999;">Comments are private to each student.</em>
+                </td>
+                <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">
+                    {% if current_user.role == "lecturer" %}
+                        {% for comment in student_results.comments %}
+                            <div style="margin-bottom: 8px; padding: 6px; background: #f8f9fa; border-left: 3px solid #007bff;">
+                                <strong>{{ comment.reviewer }}:</strong> "{{ comment.comment }}"
+                            </div>
+                        {% endfor %}
+                        {% if not student_results.comments %}
+                            <em style="color: #999;">No comments</em>
                         {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-                {% if group_students|length == 0 %}
-                <tr><td colspan="{{ 3 if not all_completed else 4 }}" style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #999; font-style: italic;">No students in this group</td></tr>
-                {% endif %}
-            </tbody>
-        </table>
+                    {% else %}
+                        {% set my_comments = student_results.comments | selectattr("reviewer_id", "equalto", current_user.id) | list %}
+                        {% for comment in my_comments %}
+                            <div style="margin-bottom: 8px; padding: 6px; background: #f8f9fa; border-left: 3px solid #007bff;">
+                                <strong>You:</strong> "{{ comment.comment }}"
+                            </div>
+                        {% endfor %}
+                        {% if not my_comments %}
+                            <em style="color: #999;">You didn’t review this student.</em>
+                        {% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Anonymous Reviews -->
+    <div style="margin-bottom: 20px;">
+        <h3>Anonymous Reviews</h3>
+        {% if current_user.role == "lecturer" %}
+            {% for anon_review in anonymous_reviews %}
+                <div style="padding: 10px; background: #f8f9fa; border-left: 1px solid #28a745; margin-bottom: 8px;">
+                    <strong>Anonymous:</strong> "{{ anon_review.comment }}"
+                </div>
+            {% endfor %}
+            {% if not anonymous_reviews %}
+                <em style="color: #999;">No anonymous reviews submitted.</em>
+            {% endif %}
+        {% else %}
+            <em style="color: #999;">Anonymous reviews are visible only to lecturers.</em>
+        {% endif %}
     </div>
 
-    <!-- TABLE 2: WAITING FOR SUBMISSION -->
-    {% if not all_completed %}
-    <div style="background: #fff3cd; border: 1px solid #ffeeba; border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: center;">
-        <span style="color: #856404; font-weight: bold;">Waiting for all students in {{ group.name }} to complete their reviews and self-assessments</span>
-        <br>
-        <small style="color: #856404;">Completed: {{ completed_count }}/{{ group_students|length }} students</small>
-    </div>
+<!-- Self Assessments — styled, lecturer sees student names; owner sees "You:" -->
+<div>
+    <h3>Self Assessments</h3>
+
+    {% if not self_assessments %}
+        <em style="color: #999;">No self-assessments submitted.</em>
     {% endif %}
 
-    <!-- TABLE 3: ANONYMOUS REVIEW -->
-    <div style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-        <h3 style="margin: 0 0 15px 0; text-align: center; font-weight: bold; color: #333;">Anonymous Review for {{ group.name }}</h3>
-        {% if current_user.role == "lecturer" %}
-            {% if all_completed %}
-                {% if anonymous_reviews %}
-                    {% for anon_review in anonymous_reviews %}
-                    <div style="padding: 15px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px;">
-                        <strong style="color: #6c757d;">Anonymous Feedback:</strong> 
-                        <span style="color: #495057; white-space: pre-wrap; overflow-wrap: anywhere;">{{ anon_review.content|replace('\n','<br>')|safe }}</span>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div style="padding: 15px; text-align: center; color: #999; font-style: italic;">
-                        No anonymous reviews submitted for {{ group.name }}
-                    </div>
-                {% endif %}
-            {% else %}
-                <div style="padding: 15px; text-align: center; color: #999; font-style: italic;">
-                    Anonymous reviews will appear once all reviews are completed for {{ group.name }}
-                </div>
-            {% endif %}
-        {% else %}
-            <div style="padding: 15px; text-align: center; color: #999; font-style: italic;">
-                Anonymous reviews are visible to the lecturer only.
-            </div>
-        {% endif %}
-    </div>
+    {% for assessment_data in self_assessments %}
+        {% set assessment = assessment_data.assessment %}
+        {% set student_name = assessment_data.student_name %}
+        {% set student_id = assessment_data.student_id if assessment_data.student_id is defined else None %}
 
-    <!-- TABLE 4: SELF ASSESSMENT -->
-    <div style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-        <h3 style="margin: 0 0 20px 0; text-align: center; font-weight: bold; color: #333;">SELF ASSESSMENT - {{ group.name }}</h3>
-        
-        {% if all_completed %}
-            {% if self_assessments %}
-                {% for assessment_data in self_assessments %}
-                    {% set assessment = assessment_data.assessment %}
-                    {% set student_name = assessment_data.student_name %}
-                    
-                    <!-- Show assessment if user is the student themselves or lecturer -->
-                    {% if current_user.full_name == student_name or current_user.role == "lecturer" %}
-                    <div style="margin-bottom: 25px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
-                        <div style="background: #e9ecef; padding: 10px 15px; border-bottom: 1px solid #ddd;">
-                            <strong style="color: #495057;">{{ student_name }} - {{ group.name }}</strong>
-                        </div>
-                        <div style="padding: 15px;">
-                            <div style="margin-bottom: 12px; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">
-                                <strong>1. Summary of contribution to {{ group.name }}:</strong>
-                                <p style="margin: 5px 0 0 0; color: #495057; white-space: pre-wrap; overflow-wrap: anywhere;">{{ assessment.summary|replace('\n','<br>')|safe }}</p>
-                            </div>
-                            <div style="margin-bottom: 12px; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">
-                                <strong>2. Challenges and learning in {{ group.name }}:</strong>
-                                <p style="margin: 5px 0 0 0; color: #495057; white-space: pre-wrap; overflow-wrap: anywhere;">{{ assessment.challenges|replace('\n','<br>')|safe }}</p>
-                            </div>
-                            <div style="margin-bottom: 12px; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">
-                                <strong>3. What would you do differently in {{ group.name }}:</strong>
-                                <p style="margin: 5px 0 0 0; color: #495057; white-space: pre-wrap; overflow-wrap: anywhere;">{{ assessment.different|replace('\n','<br>')|safe }}</p>
-                            </div>
-                            <div style="margin-bottom: 12px; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">
-                                <strong>4. Your role in {{ group.name }}:</strong>
-                                <p style="margin: 5px 0 0 0; color: #495057; white-space: pre-wrap; overflow-wrap: anywhere;">{{ assessment.role|replace('\n','<br>')|safe }}</p>
-                            </div>
-                            {% if assessment.feedback %}
-                            <div style="margin-bottom: 12px; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">
-                                <strong>5. Additional feedback about {{ group.name }}:</strong>
-                                <p style="margin: 5px 0 0 0; color: #495057; white-space: pre-wrap; overflow-wrap: anywhere;">{{ assessment.feedback|replace('\n','<br>')|safe }}</p>
-                            </div>
+        {# Show to lecturer or owner student #}
+        {% if current_user.role == "lecturer" or (student_id and current_user.id == student_id) %}
+
+            {# determine label shown before the answer: full name for lecturers, "You" for owner student #}
+            {% if current_user.role == "lecturer" %}
+                {% set label_name = student_name %}
+            {% elif student_id and current_user.id == student_id %}
+                {% set label_name = "You" %}
+            {% else %}
+                {% set label_name = student_name %}
+            {% endif %}
+
+            <div style="padding: 14px; background: #f8f9fa; border-left: 4px solid #ffc107; margin-bottom: 14px; border-radius: 8px;">
+
+                <!-- Q1 -->
+                <div style="margin-bottom:10px;">
+                    <div style="font-weight:700; margin-bottom:6px;">1. Brief summary of your contribution</div>
+                    <div style="background:#fff; border:1px solid #e6e9ee; padding:10px; border-radius:6px; white-space:pre-wrap;">
+                        <div><strong>{{ label_name }}:</strong></div>
+                        <div>
+                            {% if assessment.summary %}
+                                {{ assessment.summary }}
+                            {% else %}
+                                <em style="color:#999;"> No answer</em>
                             {% endif %}
                         </div>
                     </div>
-                    {% endif %}
-                {% endfor %}
-            {% else %}
-                <div style="padding: 15px; text-align: center; color: #999; font-style: italic;">
-                    No self assessments submitted for {{ group.name }}
                 </div>
-            {% endif %}
-        {% else %}
-            <div style="padding: 15px; text-align: center; color: #999; font-style: italic;">
-                Self assessments will appear once all reviews are completed for {{ group.name }}
+
+                <!-- Q2 -->
+                <div style="margin-bottom:10px;">
+                    <div style="font-weight:700; margin-bottom:6px;">2. What challenges did you face & what did you learn?</div>
+                    <div style="background:#fff; border:1px solid #e6e9ee; padding:10px; border-radius:6px; white-space:pre-wrap;">
+                        <div><strong>{{ label_name }}:</strong></div>
+                        <div>
+                            {% if assessment.challenges %}
+                                {{ assessment.challenges }}
+                            {% else %}
+                                <em style="color:#999;"> No answer</em>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q3 -->
+                <div style="margin-bottom:10px;">
+                    <div style="font-weight:700; margin-bottom:6px;">3. What would you do differently?</div>
+                    <div style="background:#fff; border:1px solid #e6e9ee; padding:10px; border-radius:6px; white-space:pre-wrap;">
+                        <div><strong>{{ label_name }}:</strong></div>
+                        <div>
+                            {% if assessment.different %}
+                                {{ assessment.different }}
+                            {% else %}
+                                <em style="color:#999;"> No answer</em>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q4 -->
+                <div style="margin-bottom:10px;">
+                    <div style="font-weight:700; margin-bottom:6px;">4. Describe your role and how it helped the team</div>
+                    <div style="background:#fff; border:1px solid #e6e9ee; padding:10px; border-radius:6px; white-space:pre-wrap;">
+                        <div><strong>{{ label_name }}:</strong></div>
+                        <div>
+                            {% if assessment.role %}
+                                {{ assessment.role }}
+                            {% else %}
+                                <em style="color:#999;"> No answer</em>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q5 -->
+                <div>
+                    <div style="font-weight:700; margin-bottom:6px;">5. Additional feedback (optional)</div>
+                    <div style="background:#fff; border:1px solid #e6e9ee; padding:10px; border-radius:6px; white-space:pre-wrap;">
+                        <div><strong>{{ label_name }}:</strong></div>
+                        <div>
+                            {% if assessment.feedback %}
+                                {{ assessment.feedback }}
+                            {% else %}
+                                <em style="color:#999;"> No answer</em>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
             </div>
         {% endif %}
-    </div>
+    {% endfor %}
+</div>
 
-    <!-- Navigation Buttons -->
-    <div style="text-align: center; margin-top: 30px;">
-        <a href="{{ url_for('form', group_id=group.id, subject_id=subject.id) }}" class="btn btn-secondary" 
-           style="background: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; display: inline-block; text-decoration: none;">
-            Edit Reviews
-        </a>
-        
-        <a href="{{ url_for('peer_review', group_id=group.id, subject_id=subject.id) }}" class="btn btn-primary"
-           style="background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; display: inline-block; text-decoration: none;">
-            Back to Peer Review
-        </a>
-
-        <a href="{{ url_for('dashboard') }}" class="btn btn-success"
-           style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; display: inline-block; text-decoration: none;">
-            Back to Dashboard
-        </a>
-    </div>
 </div>
 {% endblock %}

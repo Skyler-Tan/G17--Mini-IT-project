@@ -853,90 +853,95 @@ def self_assessment(group_id, subject_id):
 @login_required
 def results():
     """Results page"""
-    # Get group and subject from query parameters or session
-    group_id = request.args.get('group_id') or session.get('current_group_id')
-    subject_id = request.args.get('subject_id') or session.get('current_subject_id')
-    
+    group_id = request.args.get("group_id") or session.get("current_group_id")
+    subject_id = request.args.get("current_subject_id") or session.get("current_subject_id")
+
     if not group_id or not subject_id:
         flash("Please select a group and subject first.", "error")
-        return redirect(url_for('dashboard'))
-    
+        return redirect(url_for("dashboard"))
+
     group_students = get_students_in_group(group_id)
-    students = [{"id": student.id, "full_name": f"{student.first_name} {student.last_name}"} for student in group_students]
-    
+
+    # Completion tracking
     status = get_completion_status(group_students, group_id)
-    all_completed = all(v['completed'] for v in status.values())
-    completed_count = sum(1 for v in status.values() if v['completed'])
-    
+    all_completed = all(v["completed"] for v in status.values())
+    completed_count = sum(1 for v in status.values() if v["completed"])
+
     current_user_id = session.get("current_user_id") or current_user.id
     is_current_lecturer = current_user.role == "lecturer"
 
-    rows = []
-    # Only show results when all students have completed their reviews and assessments
+    results = {}
+
     for student_obj in group_students:
         reviews = PeerReview.query.filter_by(
-            reviewee_id=student_obj.id, 
-            group_id=group_id
+            reviewee_id=student_obj.id, group_id=group_id
         ).all()
-        
-        # Only calculate scores if all students have completed everything
+
+        # Avg / Final mark only when everyone finished
         if all_completed and reviews:
             avg_peer_score = sum(r.score for r in reviews) / len(reviews)
-            final_mark = round(avg_peer_score * 20, 2)  # Convert 5-point scale to 100-point scale
+            final_mark = round(avg_peer_score * 20, 2)
         else:
             avg_peer_score = None
             final_mark = None
-        
-        # Get comments from other students about this student
-        peer_comments = []
-        if current_user_id == student_obj.id or is_current_lecturer:
-            for review in reviews:
-                if review.comment and review.comment.strip():
-                    reviewer_name = f"{review.reviewer_user.first_name} {review.reviewer_user.last_name}" if review.reviewer_user else "Unknown"
-                    peer_comments.append({
-                        'reviewer': reviewer_name,
-                        'comment': review.comment
-                    })
-        
-        rows.append({
-            'student_name': f"{student_obj.first_name} {student_obj.last_name}",
-            'avg_peer_score': round(avg_peer_score, 2) if avg_peer_score is not None else None,
-            'final_mark': final_mark,
-            'peer_comments': peer_comments
-        })
 
-    # Get anonymous reviews for this group
+        peer_comments = []
+        for review in reviews:
+            if review.comment and review.comment.strip():
+                reviewer_name = (
+                    f"{review.reviewer_user.first_name} {review.reviewer_user.last_name}"
+                    if review.reviewer_user
+                    else "Unknown"
+                )
+                peer_comments.append(
+                    {
+                        "reviewer_id": review.reviewer_id,
+                        "reviewer": reviewer_name,
+                        "comment": review.comment.strip(),
+                    }
+                )
+
+        results[student_obj.id] = {
+            "avg_score": avg_peer_score,
+            "final_mark": final_mark,
+            "comments": peer_comments,
+        }
+
+    # Anonymous reviews (just text, linked to group)
     anonymous_reviews = AnonymousReview.query.filter_by(group_id=group_id).all()
 
+    # Self-assessments
     self_assessments = []
     for student_obj in group_students:
         assessment = SelfAssessment.query.filter_by(
-            user_id=student_obj.id, 
-            group_id=group_id
+            user_id=student_obj.id, group_id=group_id
         ).first()
         if assessment:
-            self_assessments.append({
-                'student_name': f"{student_obj.first_name} {student_obj.last_name}",
-                'assessment': assessment
-            })
+            self_assessments.append(
+                {
+                    "student_id": student_obj.id,
+                    "student_name": f"{student_obj.first_name} {student_obj.last_name}",
+                    "assessment": assessment,
+                }
+            )
 
-    # Get group and subject details
     group = Group.query.get(group_id)
     subject = Subject.query.get(subject_id)
-    
+
     return render_template(
         "results.html",
         all_completed=all_completed,
         completed_count=completed_count,
-        rows=rows,
-        current_user_id=current_user_id,
+        results=results,
+        current_user=current_user,
         is_lecturer=is_current_lecturer,
         anonymous_reviews=anonymous_reviews,
         self_assessments=self_assessments,
         group_students=group_students,
         group=group,
-        subject=subject
+        subject=subject,
     )
+
 @app.route("/done")
 @login_required  
 def done():
@@ -994,9 +999,6 @@ def get_completion_status(group_students, group_id):
         }
     
     return status
-
-
-
 
 if __name__ == "__main__":
     with app.app_context():
