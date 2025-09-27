@@ -417,17 +417,25 @@ def login():
     if request.method == 'POST':
         username = request.form.get("username")
         password = request.form.get("password")
+        selected_role = request.form.get("role")  # from dropdown or radio button in form
 
         user = User.query.filter_by(username=username).first()
 
         if user and check_password_hash(user.password, password):
+            if user.role != selected_role:
+                flash("Invalid credentials. Try again.", "danger")
+                return redirect(url_for("login"))
+
+            
             login_user(user)
             flash("Login successful!", "success")
             return redirect(url_for("dashboard"))
-        else:
-            flash("Invalid credentials. Try again.", "danger")
+
+        
+        flash("Invalid credentials. Try again.", "danger")
 
     return render_template("login.html")
+
 
 
 
