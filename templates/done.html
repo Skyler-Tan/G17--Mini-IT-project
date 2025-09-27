@@ -1,12 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Peer Review App{% endblock %}
+{% block title %}My Profile-Peer Review App{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">
 {% endblock %}
 
 {% block content %}
+
+<header class="topbar">
+  <div class="logo-area">
+    <img src="{{ url_for('static', filename='uni_logo-removebg-preview.png') }}" alt="University Logo">
+  </div>
+</header>
+
+
 <div style="display: flex; justify-content: center; align-items: center; min-height: 60vh; text-align: center;">
     <div style="max-width: 500px; padding: 40px;">
         <!-- Success Animation -->
@@ -68,10 +76,6 @@
             <a href="{{ url_for('form') }}" 
                style="color: #6c757d; text-decoration: none; font-size: 14px; margin-right: 15px;">
                 ✏️ Edit My Reviews
-            </a>
-            <a href="{{ url_for('index') }}" 
-               style="color: #6c757d; text-decoration: none; font-size: 14px;">
-                🔄 Start New Review
             </a>
         </div>
         

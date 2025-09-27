@@ -1,12 +1,19 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Peer Review App{% endblock %}
+{% block title %}My Profile-Peer Review App{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">
 {% endblock %}
 
 {% block content %}
+
+<header class="topbar">
+  <div class="logo-area">
+    <img src="{{ url_for('static', filename='uni_logo-removebg-preview.png') }}" alt="University Logo">
+  </div>
+</header>
+
 <div class="container" style="max-width: 800px; margin: 0 auto; padding: 20px;">
     <center>
         <h2>Peer Review Dashboard</h2>

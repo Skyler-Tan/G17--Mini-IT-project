@@ -799,30 +799,29 @@ def self_assessment(group_id, subject_id):
     group = Group.query.get_or_404(group_id)
     subject = Subject.query.get_or_404(subject_id)
 
-    # Look for existing self-assessment
-    assessment = SelfAssessment.query.filter_by(
-        user_id=current_user.id,
-        group_id=group_id
-    ).first()
-
     if request.method == "POST":
-        # Read form data
+        # Save/update self-assessment
         summary = request.form.get("summary")
         challenges = request.form.get("challenges")
         different = request.form.get("different")
         role = request.form.get("role")
         feedback = request.form.get("feedback")
 
-        # Validation
-        if not summary or not challenges or not different or not role:
-            flash("Please complete all required fields.", "error")
-            return redirect(url_for("self_assessment", group_id=group_id, subject_id=subject_id))
+        assessment = SelfAssessment.query.filter_by(
+            user_id=current_user.id,
+            group_id=group.id
+        ).first()
 
-        if not assessment:
-            # Create new
+        if assessment:
+            assessment.summary = summary
+            assessment.challenges = challenges
+            assessment.different = different
+            assessment.role = role
+            assessment.feedback = feedback
+        else:
             assessment = SelfAssessment(
                 user_id=current_user.id,
-                group_id=group_id,
+                group_id=group.id,
                 summary=summary,
                 challenges=challenges,
                 different=different,
@@ -830,25 +829,26 @@ def self_assessment(group_id, subject_id):
                 feedback=feedback
             )
             db.session.add(assessment)
-        else:
-            # Update existing
-            assessment.summary = summary
-            assessment.challenges = challenges
-            assessment.different = different
-            assessment.role = role
-            assessment.feedback = feedback
 
         db.session.commit()
-        flash("Self-assessment saved successfully.", "success")
-        return redirect(url_for("dashboard"))
+        flash("Your self-assessment has been submitted successfully.", "success")
+
+        # 🔑 redirect to done page
+        return redirect(url_for("done", group_id=group.id, subject_id=subject.id))
+
+    # GET request → show the form
+    assessment_data = SelfAssessment.query.filter_by(
+        user_id=current_user.id,
+        group_id=group.id
+    ).first()
 
     return render_template(
         "self_assessment.html",
-        group=group,
         subject=subject,
-        assessment_data=assessment,
-        prior_assessment=assessment is not None
+        group=group,
+        assessment_data=assessment_data
     )
+
 @app.route("/results")
 @login_required
 def results():
@@ -937,6 +937,24 @@ def results():
         group=group,
         subject=subject
     )
+@app.route("/done")
+@login_required  
+def done():
+    """Completion page"""
+    if current_user.role != "student":
+        flash("This page is for students only.", "error")
+        return redirect(url_for('dashboard'))
+    
+    group_id = request.args.get('group_id') or session.get('current_group_id')
+    subject_id = request.args.get('subject_id') or session.get('current_subject_id')
+    
+    group = Group.query.get(group_id) if group_id else None
+    subject = Subject.query.get(subject_id) if subject_id else None
+    
+    return render_template("done.html", 
+                         current_user=session.get("current_user"),
+                         group=group, 
+                         subject=subject)
 
 # Helper functions
 def get_students_in_group(group_id):
@@ -978,24 +996,7 @@ def get_completion_status(group_students, group_id):
     return status
 
 
-@app.route("/done")
-@login_required  
-def done():
-    """Completion page"""
-    if current_user.role != "student":
-        flash("This page is for students only.", "error")
-        return redirect(url_for('dashboard'))
-    
-    group_id = request.args.get('group_id') or session.get('current_group_id')
-    subject_id = request.args.get('subject_id') or session.get('current_subject_id')
-    
-    group = Group.query.get(group_id) if group_id else None
-    subject = Subject.query.get(subject_id) if subject_id else None
-    
-    return render_template("done.html", 
-                         current_user=session.get("current_user"),
-                         group=group, 
-                         subject=subject)
+
 
 if __name__ == "__main__":
     with app.app_context():
