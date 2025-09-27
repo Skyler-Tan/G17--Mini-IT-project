@@ -17,7 +17,7 @@ from config import Config
 from models import db, User, Subject, Group, GroupMember, PeerReview, Setting, SelfAssessment, AnonymousReview
 import secrets
 from dotenv import load_dotenv
-
+import logging
 
 # ---------------- Flask app setup ---------------- #
 ALLOWED_EXT = {"csv"}
@@ -38,15 +38,20 @@ db.init_app(app)
 migrate = Migrate()
 migrate.init_app(app, db)
 
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 # ---------------- ROUTES ---------------- #
 #Isyraf
 # ---------------- SUBJECT ---------------- #
 @app.route("/subjects", methods=["GET"])
+@login_required
 def list_subjects():
-    subjects = Subject.query.order_by(Subject.name).all()
-    lecturer = User.query.filter_by(role="lecturer").order_by(User.first_name).all()
-    return render_template("subject.html", subjects=subjects, lecturer=lecturer)
-
+    if current_user.role != "lecturer":
+        flash("Access denied: Lecturers only", "error")
+        return redirect(url_for("dashboard"))
+    subjects = Subject.query.filter_by(lecturer_id=current_user.id).order_by(Subject.name).all()
+    return render_template("subject.html", subjects=subjects)
 @app.route("/subjects/create", methods=["POST"])
 @login_required
 def create_subject():
@@ -55,13 +60,12 @@ def create_subject():
         return redirect(url_for("dashboard"))
 
     name = (request.form.get("name") or "").strip()
-    lecturer_id = request.form.get("lecturer_id")
 
-    if not name or not lecturer_id:
-        flash("Subject name and lecturer are required", "error")
+    if not name:
+        flash("Subject name is required", "error")
     else:
         try:
-            s = Subject(name=name, lecturer_id=int(lecturer_id))
+            s = Subject(name=name, lecturer_id=current_user.id)
             db.session.add(s)
             db.session.commit()
             flash("Subject created", "success")
@@ -70,11 +74,13 @@ def create_subject():
             flash(f"Error creating subject: {e}", "error")
 
     return redirect(url_for("dashboard"))
-
-
 @app.route("/subjects/<int:subject_id>/delete", methods=["POST"])
+@login_required
 def delete_subject(subject_id):
-    subj = Subject.query.get_or_404(subject_id)
+    if current_user.role != "lecturer":
+        flash("Access denied: Lecturers only", "error")
+        return redirect(url_for("dashboard"))
+    subj = Subject.query.filter_by(id=subject_id, lecturer_id=current_user.id).first_or_404()
     try:
         db.session.delete(subj)
         db.session.commit()
@@ -86,8 +92,14 @@ def delete_subject(subject_id):
 
 # ---------------- GROUP ---------------- #
 @app.route("/subjects/<int:subject_id>/groups", methods=["GET", "POST"])
+@login_required
 def manage_groups(subject_id):
-    subj = Subject.query.get_or_404(subject_id)
+    if current_user.role != "lecturer":
+        flash("Access denied: Lecturers only", "error")
+        return redirect(url_for("home"))
+    
+    subj = Subject.query.filter_by(id=subject_id, lecturer_id=current_user.id).first_or_404()
+
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
         if not name:
@@ -108,7 +120,12 @@ def manage_groups(subject_id):
     return render_template("groups.html", subject=subj, groups=groups, students=students)
 
 @app.route("/subjects/<int:subject_id>/add_student_to_group", methods=["POST"])
+@login_required
 def add_student_to_group(subject_id):
+    if current_user.role != "lecturer":
+        flash("Access denied: Lecturers only", "error")
+        return redirect(url_for("home"))
+    Subject.query.filter_by(id=subject_id, lecturer_id=current_user.id).first_or_404()
     student_id = (request.form.get("student_id") or 0)
     group_id = int(request.form.get("group_id") or 0)
     if student_id and group_id:
@@ -121,12 +138,16 @@ def add_student_to_group(subject_id):
             db.session.rollback()
             flash(f"Error adding student to group: {e}", "error")
     return redirect(url_for("manage_groups", subject_id=subject_id))
-
      
-
 @app.route("/groups/<int:group_id>/delete", methods=["POST"])
+@login_required
 def delete_group(group_id):
+    if current_user.role != "lecturer":
+        flash("Access denied: Lecturers only", "error")
+        return redirect(url_for("home"))
     grp = Group.query.get_or_404(group_id)
+    if grp.subject.lecturer_id != current_user.id:
+        abort(403)
     subject_id = grp.subject_id
     try:
         db.session.delete(grp)
@@ -137,13 +158,13 @@ def delete_group(group_id):
         flash(f"Error deleting group: {e}", "error")
     return redirect(url_for("manage_groups", subject_id=subject_id))
 
-
-
-
 @app.route("/subjects/<int:subject_id>/groups/view", methods=["GET"])
 @login_required
 def view_groups(subject_id):
-    subject = Subject.query.get_or_404(subject_id)
+    if current_user.role != "lecturer":
+        flash("Access denied: Lecturers only", "error")
+        return redirect(url_for("home"))
+    subject = Subject.query.filter_by(id=subject_id, lecturer_id=current_user.id).get_or_404(subject_id)
     groups = Group.query.filter_by(subject_id=subject_id).order_by(Group.name).all()
 
     # Assuming you have a PeerReview model linked to groups
@@ -154,12 +175,25 @@ def view_groups(subject_id):
 
     return render_template("view_groups.html", subject=subject, groups=groups, peer_reviews=peer_reviews)
 
-
 # ---------------- STUDENTS / USERS ---------------- #
 @app.route("/students", methods=["GET", "POST"])
+@login_required
 def manage_students():
-    subjects = Subject.query.order_by(Subject.name).all()
-    groups = Group.query.order_by(Group.name).all()
+    if current_user.role != "lecturer":
+        flash("Access denied: Lecturers only", "error")
+        return redirect(url_for("home"))
+    # Dapatkan subjek pensyarah
+    subjects = Subject.query.filter_by(lecturer_id=current_user.id).order_by(Subject.name).all()
+    subject_ids = [s.id for s in subjects]
+    groups = Group.query.filter(Group.subject_id.in_(subject_ids)).order_by(Group.name).all()
+    group_ids = [g.id for g in groups]
+
+    # Dapatkan pelajar dalam kumpulan tersebut
+    students = User.query.join(GroupMember).filter(
+        GroupMember.group_id.in_(group_ids),
+        User.role == "student"
+    ).order_by(User.first_name).all() if group_ids else []
+
     if request.method == "POST":
         first_name = (request.form.get("first_name") or "").strip()
         last_name = (request.form.get("last_name") or "").strip()
@@ -169,6 +203,10 @@ def manage_students():
         role = "student"
         subject_id = int(request.form.get("subject_id") or 0) or None
         group_id = int(request.form.get("group_id") or 0) or None
+
+        if subject_id and subject_id not in subject_ids:
+            flash("Anda hanya boleh menambah pelajar ke subjek anda sendiri", "error")
+            return redirect(url_for("manage_students"))
 
         if not first_name or not last_name or not email or not username or not password:
             flash("All fields are required", "error")
@@ -197,12 +235,22 @@ def manage_students():
                 db.session.rollback()
                 flash(f"Error adding student: {e}", "error")
 
-    students = User.query.filter_by(role="student").order_by(User.first_name).all()
+    for s in students:
+        for m in s.memberships:
+            print(f"Student: {s.first_name}, Group: {m.group.name}, Subject: {m.group.subject.name}")
     return render_template("students.html", students=students, subjects=subjects, groups=groups)
 
 @app.route("/students/<id_number>/delete", methods=["POST"])
+@login_required
 def delete_student( id_number):
+    if current_user.role != "lecturer":
+        flash("Access denied: Lecturers only", "error")
+        return redirect(url_for("home"))
     user = User.query.get_or_404(id_number)
+    # Check if student is in lecturer's groups
+    group_ids = [g.id for g in Group.query.join(Subject).filter(Subject.lecturer_id == current_user.id).all()]
+    if not GroupMember.query.filter_by(id_number=user.id).filter(GroupMember.group_id.in_(group_ids)).first():
+        abort(403)
     try:
         db.session.delete(user)
         db.session.commit()
@@ -214,7 +262,15 @@ def delete_student( id_number):
 
 # ---------------- IMPORT CSV ---------------- #
 @app.route("/students/import", methods=["GET", "POST"])
+@login_required
 def import_students():
+    if current_user.role != "lecturer":
+        flash("Access denied: Lecturers only", "error")
+        return redirect(url_for("home"))
+      
+    subject_ids = [s.id for s in Subject.query.filter_by(lecturer_id=current_user.id).all()]
+    valid_group_ids = [g.id for g in Group.query.filter(Group.subject_id.in_(subject_ids)).all()]
+
     if request.method == "POST":
         f = request.files.get("file")
         if not f or f.filename == "":
@@ -232,7 +288,9 @@ def import_students():
         try:
             with open(path, newline='', encoding='utf-8-sig') as csvfile:
                 reader = csv.DictReader(csvfile)
+                print("CSV Headers:", reader.fieldnames)
                 for row in reader:
+                    print("Row data:", row)
                     first_name = (row.get("first_name") or "").strip()
                     last_name = (row.get("last_name") or "").strip()
                     email = (row.get("email") or "").strip()
@@ -253,7 +311,7 @@ def import_students():
                     db.session.flush()  # get user.id for group
 
                     group_id = int(row.get("group_id") or 0) or None
-                    if group_id:
+                    if group_id and group_id in valid_group_ids:
                         membership = GroupMember(group_id=group_id, id_number=user.id)
                         db.session.add(membership)
 
@@ -272,11 +330,13 @@ def import_students():
 
 # ---------------- PEER REVIEWS ---------------- #
 @app.route("/reviews")
+@login_required
 def show_reviews():
     reviews = PeerReview.query.order_by(PeerReview.created_at.desc()).all()
     return render_template("reviews.html", reviews=reviews)
 
 @app.route("/reviews/export")
+@login_required
 def export_reviews():
     reviews = PeerReview.query.all()
     si = StringIO()
@@ -297,26 +357,19 @@ def export_reviews():
 
 # ---------------- SETTINGS ---------------- #
 @app.route("/settings", methods=["GET", "POST"])
-def manage_settings():
-    setting = Setting.query.first()
-    if not setting:
-        setting = Setting()
+@login_required
+def settings():
+    if current_user.role != "lecturer":
+        flash("Access denied: Lecturers only", "error")
+        return redirect(url_for("home"))
+    setting = Setting.query.first() or Setting()
+    if request.method == "POST":
+        setting.criteria = request.form.get("criteria")
+        setting.max_score = int(request.form.get("max_score") or 5)
+        setting.deadline = datetime.strptime(request.form.get("deadline"), "%Y-%m-%dT%H:%M") if request.form.get("deadline") else None
         db.session.add(setting)
         db.session.commit()
-
-    if request.method == "POST":
-        try:
-            setting.criteria = request.form.get("criteria") or setting.criteria
-            setting.max_score = int(request.form.get("max_score") or setting.max_score)
-            deadline_str = request.form.get("deadline")
-            setting.deadline = datetime.strptime(deadline_str, "%Y-%m-%dT%H:%M") if deadline_str else None
-            db.session.commit()
-            flash("Settings updated successfully", "success")
-            return redirect(url_for("manage_settings"))
-        except Exception as e:
-            db.session.rollback()
-            flash(f"Error updating settings: {e}", "error")
-
+        flash("Settings updated", "success")
     return render_template("settings.html", setting=setting)
 
 #THANISH
@@ -410,6 +463,7 @@ def register():
 
 
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -419,6 +473,7 @@ def login():
 
         user = User.query.filter_by(username=username).first()
 
+<<<<<<< HEAD
         if user and check_password_hash(user.password, password):
             if user.role != selected_role:
                 flash("Invalid credentials. Try again.", "danger")
@@ -431,6 +486,23 @@ def login():
 
         
         flash("Invalid credentials. Try again.", "danger")
+=======
+        if user:
+            if user.role == selected_role and check_password_hash(user.password, password):
+                login_user(user)
+                flash(f"Login successful as {selected_role}!", "success")
+                logging.info(f"User {username} ({selected_role}) logged in at {datetime.now()}")
+                return redirect(url_for("dashboard"))
+            else:
+                if user.role != selected_role:
+                    flash(f"Role mismatch. You are registered as {user.role}, not {selected_role}.", "danger")
+                else:
+                    flash("Invalid password. Try again.", "danger")
+                logging.warning(f"Failed login attempt for {username} ({selected_role}) - {datetime.now()}")
+        else:
+            flash("Username not found. Please register or check your input.", "danger")
+            logging.warning(f"Failed login attempt for unknown user {username} at {datetime.now()}")
+>>>>>>> origin/test-add
 
     return render_template("login.html")
 
