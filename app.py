@@ -793,96 +793,62 @@ def form():
     )
 
 
-@app.route("/self_assessment", methods=["GET", "POST"])
+@app.route("/self_assessment/<int:group_id>/<int:subject_id>", methods=["GET", "POST"])
 @login_required
-def self_assessment():
-    """Self assessment form - using your actual SelfAssessment model"""
-    if current_user.role != "student":
-        flash("This page is for students only.", "error")
-        return redirect(url_for('dashboard'))
-    
-    # Get group and subject from query parameters or session
-    group_id = request.args.get('group_id') or session.get('current_group_id')
-    subject_id = request.args.get('subject_id') or session.get('current_subject_id')
-    
-    if not group_id or not subject_id:
-        flash("Please select a group and subject first.", "error")
-        return redirect(url_for('dashboard'))
-    
-    current_user_id = session.get("current_user_id") or current_user.id
-    current_user_obj = User.query.get(current_user_id)
-    
-    if not current_user_obj:
-        flash("Please select yourself from the peer review page first.", "error")
-        return redirect(url_for("peer_review", group_id=group_id, subject_id=subject_id))
+def self_assessment(group_id, subject_id):
+    group = Group.query.get_or_404(group_id)
+    subject = Subject.query.get_or_404(subject_id)
 
-    if request.method == "POST":
-        try:
-            # Your SelfAssessment model only has score and comment
-            score_str = request.form.get("score", "").strip()
-            comment = request.form.get("comment", "").strip()
-
-            if not score_str or not comment:
-                flash("Please complete all required fields.", "error")
-                return redirect(url_for("self_assessment", group_id=group_id, subject_id=subject_id))
-
-            try:
-                score = int(score_str)
-                if not (1 <= score <= 5):
-                    flash("Score must be between 1 and 5.", "error")
-                    return redirect(url_for("self_assessment", group_id=group_id, subject_id=subject_id))
-            except (TypeError, ValueError):
-                flash("Invalid score provided.", "error")
-                return redirect(url_for("self_assessment", group_id=group_id, subject_id=subject_id))
-
-            # Replace existing self assessment for this user in this group
-            SelfAssessment.query.filter_by(
-                user_id=current_user_id, 
-                group_id=group_id
-            ).delete()
-            
-            assessment = SelfAssessment(
-                user_id=current_user_id,
-                score=score,
-                comment=comment,
-                group_id=group_id
-            )
-            db.session.add(assessment)
-            db.session.commit()
-
-            flash("Self assessment submitted successfully.", "success")
-            return redirect(url_for("results", group_id=group_id, subject_id=subject_id))
-        except Exception as e:
-            db.session.rollback()
-            app.logger.exception("Error saving self assessment")
-            flash(f"An error occurred while saving your self assessment: {str(e)}", "error")
-            return redirect(url_for("self_assessment", group_id=group_id, subject_id=subject_id))
-
-    # Pre-fill existing self assessment data when editing
-    existing_assessment = SelfAssessment.query.filter_by(
-        user_id=current_user_id, 
+    # Look for existing self-assessment
+    assessment = SelfAssessment.query.filter_by(
+        user_id=current_user.id,
         group_id=group_id
     ).first()
-    
-    assessment_data = {}
-    if existing_assessment:
-        assessment_data = {
-            'score': existing_assessment.score,
-            'comment': existing_assessment.comment or ''
-        }
 
-    # Get group and subject details
-    group = Group.query.get(group_id)
-    subject = Subject.query.get(subject_id)
-    
+    if request.method == "POST":
+        # Read form data
+        summary = request.form.get("summary")
+        challenges = request.form.get("challenges")
+        different = request.form.get("different")
+        role = request.form.get("role")
+        feedback = request.form.get("feedback")
+
+        # Validation
+        if not summary or not challenges or not different or not role:
+            flash("Please complete all required fields.", "error")
+            return redirect(url_for("self_assessment", group_id=group_id, subject_id=subject_id))
+
+        if not assessment:
+            # Create new
+            assessment = SelfAssessment(
+                user_id=current_user.id,
+                group_id=group_id,
+                summary=summary,
+                challenges=challenges,
+                different=different,
+                role=role,
+                feedback=feedback
+            )
+            db.session.add(assessment)
+        else:
+            # Update existing
+            assessment.summary = summary
+            assessment.challenges = challenges
+            assessment.different = different
+            assessment.role = role
+            assessment.feedback = feedback
+
+        db.session.commit()
+        flash("Self-assessment saved successfully.", "success")
+        return redirect(url_for("dashboard"))
+
     return render_template(
-        "self_assessment.html", 
-        current_user=current_user_obj,
-        assessment_data=assessment_data,
+        "self_assessment.html",
         group=group,
-        subject=subject
+        subject=subject,
+        assessment_data=assessment,
+        prior_assessment=assessment is not None
     )
-
 @app.route("/results")
 @login_required
 def results():

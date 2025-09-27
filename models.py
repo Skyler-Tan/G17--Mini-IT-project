@@ -106,12 +106,19 @@ class SelfAssessment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id", ondelete="CASCADE"), nullable=True)
 
-    score = db.Column(db.Integer, db.CheckConstraint("score BETWEEN 1 AND 5", name="ck_self_score_range"), nullable=False)
-    comment = db.Column(db.Text, nullable=True)
+    summary = db.Column(db.Text, nullable=False)
+    challenges = db.Column(db.Text, nullable=False)
+    different = db.Column(db.Text, nullable=False)
+    role = db.Column(db.Text, nullable=False)
+    feedback = db.Column(db.Text, nullable=True)
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship("User", backref="self_assessments")
     group = db.relationship("Group", backref="self_assessments")
+
+    def __repr__(self):
+        return f"<SelfAssessment id={self.id} user_id={self.user_id}>"
 
     def __repr__(self):
         return f"<SelfAssessment id={self.id} user_id={self.user_id} score={self.score}>"
