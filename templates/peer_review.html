@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 
+<<<<<<< HEAD
 {% block title %}My Profile-Peer Review App{% endblock %}
 
 {% block extra_css %}
@@ -21,10 +22,22 @@
             <strong>Subject:</strong> {{ subject.name }} | <strong>Group:</strong> {{ group.name }}
         </div>
     </center>
+=======
+{% block title %}Dashboard - Peer Review App{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 0 auto; padding: 20px;">
+    <center><h2>Peer Review Dashboard</h2></center>
+>>>>>>> origin/database-link
     <br>
 
     <!-- Students Section -->
     <div style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+<<<<<<< HEAD
         <h3 style="margin-bottom: 20px; color: #333;">Students in Your Group ({{ group.name }})</h3>
         
         {% set current_user_fullname = current_user.first_name ~ ' ' ~ current_user.last_name %}
@@ -39,12 +52,30 @@
                    style="text-decoration: none;">
                     <div style="background: #007bff; border: 2px solid #0056b3; border-radius: 15px; padding: 15px 20px; width: 200px; text-align: center; cursor: pointer; transition: all 0.3s;">
                         <strong style="color: white;">{{ student_fullname }} (Click to Review)</strong>
+=======
+        <h3 style="margin-bottom: 20px; color: #333;">Students</h3>
+        
+        {% for student in students %}
+        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+            {% set current_user_fullname = current_user.first_name + ' ' + current_user.last_name %}
+            
+            {% if student == current_user_fullname %}
+                <!-- Current user - clickable -->
+                <a href="{{ url_for('switch_user_and_form', username=student.replace(' ', '_')) }}" 
+                   style="text-decoration: none;">
+                    <div style="background: #007bff; border: 2px solid #0056b3; border-radius: 15px; padding: 15px 20px; width: 200px; text-align: center; cursor: pointer; transition: all 0.3s;">
+                        <strong style="color: white;">{{ student }} (Click to Review)</strong>
+>>>>>>> origin/database-link
                     </div>
                 </a>
                 
                 <!-- Completion Checkmark -->
                 <div style="margin-left: 20px;">
+<<<<<<< HEAD
                     {% if completion_status[student.id] and completion_status[student.id].reviews_count > 0 %}
+=======
+                    {% if completion_status[student]['reviews_count'] > 0 %}
+>>>>>>> origin/database-link
                         <svg width="30" height="30" style="color: #28a745;">
                             <path d="M5 15 L12 22 L25 8" stroke="#28a745" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
@@ -57,7 +88,11 @@
             {% else %}
                 <!-- Other students - non-clickable, locked -->
                 <div style="background: #f8f9fa; border: 2px solid #6c757d; border-radius: 15px; padding: 15px 20px; width: 200px; text-align: center; opacity: 0.6;">
+<<<<<<< HEAD
                     <strong style="color: #6c757d;">{{ student_fullname }} (Locked)</strong>
+=======
+                    <strong style="color: #6c757d;">{{ student }} (Locked)</strong>
+>>>>>>> origin/database-link
                 </div>
                 <div style="margin-left: 20px;">
                     <span style="color: #6c757d; font-size: 20px;">🔒</span>
@@ -67,6 +102,7 @@
         {% endfor %}
     </div>
 
+<<<<<<< HEAD
     <!-- Group Information -->
     <div style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
         <h3 style="margin-bottom: 15px;">Group Information</h3>
@@ -76,13 +112,21 @@
         <p><strong>Reviews Completed:</strong> {{ completed_count }}/{{ group_students|length }}</p>
     </div>
 
+=======
+>>>>>>> origin/database-link
     <!-- Results Preview -->
     <div style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
         <h3 style="margin-bottom: 15px;">Results Preview</h3>
         
         {% if all_completed %}
+<<<<<<< HEAD
             <div style="color: #28a745; margin-bottom: 15px;">
                 <strong>✓ All students in your group completed reviews</strong>
+=======
+            <!-- Show peer averages only -->
+            <div style="color: #28a745; margin-bottom: 15px;">
+                <strong>✓ All students completed reviews</strong>
+>>>>>>> origin/database-link
             </div>
             
             <table style="width: 100%; border-collapse: collapse;">
@@ -95,18 +139,30 @@
                 <tbody>
                     {% for result in results %}
                     <tr>
+<<<<<<< HEAD
                         <td style="padding: 10px; border: 1px solid #ddd;"><strong>{{ result.student_name }}</strong></td>
                         <td style="padding: 10px; border: 1px solid #ddd; color: #28a745;">{{ result.avg_score }}/5</td>
+=======
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>{{ result[0] }}</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd; color: #28a745;">{{ result[1] }}/5</td>
+>>>>>>> origin/database-link
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         {% else %}
             <div style="color: #dc3545; text-align: center; padding: 20px;">
+<<<<<<< HEAD
                 <strong>⏳ Waiting for all students in your group to complete their reviews</strong>
                 <br>
                 <small style="color: #666;">
                     Completed: {{ completed_count }}/{{ group_students|length }} students
+=======
+                <strong>⏳ Waiting for all students to complete their reviews</strong>
+                <br>
+                <small style="color: #666;">
+                    Completed: {{ completed_count }}/{{ total_students }} students
+>>>>>>> origin/database-link
                 </small>
             </div>
         {% endif %}
@@ -114,6 +170,7 @@
 
     <!-- Navigation -->
     <div style="text-align: center; margin-top: 20px;">
+<<<<<<< HEAD
         <a href="{{ url_for('results', group_id=group.id, subject_id=subject.id) }}" 
            style="background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin: 5px;">
             Results 
@@ -122,6 +179,12 @@
            style="background: #17a2b8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin: 5px;">
             Self Assessment
         </a>
+=======
+        <a href="{{ url_for('results') }}" 
+           style="background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin: 5px;">
+            Results 
+        </a>
+>>>>>>> origin/database-link
         <a href="{{ url_for('dashboard') }}" 
            style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin: 5px;">
             Back to Dashboard
@@ -130,10 +193,18 @@
 </div>
 
 <style>
+<<<<<<< HEAD
+=======
+/* Hover effects for student buttons */
+>>>>>>> origin/database-link
 a div:hover {
     background: #0056b3 !important;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
 }
 </style>
+<<<<<<< HEAD
 {% endblock %}
+=======
+{% endblock %}
+>>>>>>> origin/database-link
