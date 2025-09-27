@@ -1,35 +1,38 @@
 {% extends "layout.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='subject.css') }}">
+{% endblock %}
+
 {% block content %}
 <h2>Subjects</h2>
 
-<form method="post" action="{{ url_for('create_subject') }}" class="card">
-  <label>New Subject</label>
-  <input name="name" placeholder="e.g. CS101" required>
-  <label>Lecturer</label>
-  <select name="lecturer_id" required>
-    {% for l in lecturer %}
-      <option value="{{ l.id }}">{{ l.first_name }} {{ l.last_name }}</option>
-    {% endfor %}
-  </select>
+<div class="table-container">
+  <form method="post" action="{{ url_for('create_subject') }}" class="card">
+    <label>New Subject</label>
+    <input name="name" placeholder="e.g. Mathematics" required>
 
-  <button type="submit">Create Subject</button>
-</form>
+    <button type="submit">Create Subject</button>
+  </form>
 
-<table>
-  <thead><tr><th>ID</th><th>Name</th><th>Groups</th><th>Actions</th></tr></thead>
-  <tbody>
-    {% for s in subjects %}
-      <tr>
-        <td>{{ s.id }}</td>
-        <td><a href="{{ url_for('manage_groups', subject_id=s.id) }}">{{ s.name }}</a></td>
-        <td>{{ s.groups|length }}</td>
-        <td>
-          <form method="post" action="{{ url_for('delete_subject', subject_id=s.id) }}" onsubmit="return confirm('Delete subject and its groups?');">
-            <button type="submit">Delete</button>
-          </form>
-        </td>
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Name</th><th>Groups</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for s in subjects %}
+        <tr>
+          <td>{{ s.id }}</td>
+          <td><a href="{{ url_for('manage_groups', subject_id=s.id) }}">{{ s.name }}</a></td>
+          <td>{{ s.groups|length }}</td>
+          <td>
+            <form method="post" action="{{ url_for('delete_subject', subject_id=s.id) }}" onsubmit="return confirm('Delete subject and its groups?');">
+              <button type="submit">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}

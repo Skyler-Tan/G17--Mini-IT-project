@@ -1,5 +1,10 @@
 {% extends "layout.html" %}
 {% block content %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='groups.css') }}">
+{% endblock %}
+
 <h2>Groups for {{ subject.name }}</h2>
 
 <form method="post" class="card">
@@ -54,4 +59,5 @@
 </form>
 
 <p><a href="{{ url_for('list_subjects') }}">← Back to Subjects</a></p>
+
 {% endblock %}

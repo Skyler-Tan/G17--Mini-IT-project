@@ -5,19 +5,16 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Peer Review</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% block extra_css %}{% endblock %}
 </head>
 <body>
-  <header>
-    <h1>Student Peer Review System</h1>
-<nav>
-  <a href="{{ url_for('list_subjects') }}">Subjects</a> |
-  <a href="{{ url_for('manage_students') }}">Students</a> |
-  <a href="{{ url_for('import_students') }}">Import Students</a> |
-  <a href="{{ url_for('show_reviews') }}">Reviews</a> |
-  <a href="{{ url_for('manage_settings') }}">Settings</a> |
-</nav>
 
+  <header class="topbar">
+   <div class="logo-area">
+    <img src="{{ url_for('static', filename='uni_logo-removebg-preview.png') }}" alt="University Logo">
+   </div>
   </header>
+  
 
   {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
@@ -32,5 +29,16 @@
   <main>
     {% block content %}{% endblock %}
   </main>
+
+  {% block footer %}
+    <footer class="footer">
+        <p>&copy; {{ current_year }} Multimedia University. All Rights Reserved.</p>
+        <p>
+            <a href="#">Privacy Policy</a> | 
+            <a href="#">Terms of Service</a> | 
+            <a href="#">Contact</a>
+        </p>
+    </footer>
+    {% endblock %}
 </body>
 </html>

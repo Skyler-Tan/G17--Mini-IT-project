@@ -1,0 +1,65 @@
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+.page-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* make it take up full viewport height */
+}
+
+.content {
+  flex: 1;
+  padding-bottom: 40px;
+}
+
+/* Footer styles */
+.footer {
+  background: #003366;
+  color: #fff;
+  text-align: center;
+  padding: 15px 20px;
+  font-size: 14px;
+  width: 100%;
+  margin-top: auto; /* ensures it stays at bottom if content is short */
+}
+
+.footer a {
+  color: #ffcccc;
+  text-decoration: none;
+  margin: 0 5px;
+  transition: color 0.3s;
+}
+
+.footer a:hover {
+  color: #fff;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+}
+
+#flash-messages {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: 80%;
+  max-width: 500px;
+}
+
+.flash {
+  padding: 12px 20px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: bold;
+  opacity: 0.95;
+}
+
+.flash.success { background-color: #28a745; color: white; }  
+.flash.danger  { background-color: #dc3545; color: white; }  
+.flash.info    { background-color: #17a2b8; color: white; }  
+.flash.warning { background-color: #ffc107; color: black; }  

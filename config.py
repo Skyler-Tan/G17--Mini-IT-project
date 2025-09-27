@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+print("DEBUG DIRECT_URL =", os.environ.get("DIRECT_URL"))
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))

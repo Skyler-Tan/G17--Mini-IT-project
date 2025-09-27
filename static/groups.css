@@ -1,0 +1,121 @@
+/* General page styling */
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f7fa;
+  color: #333;
+  margin: 0;
+  padding: 0;
+}
+
+h2, h3 {
+  margin-bottom: 1rem;
+  color: #222;
+}
+
+a {
+  color: #0077cc;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* Card form styling */
+form.card {
+  background: #fff;
+  padding: 1.2rem;
+  margin-bottom: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+label {
+  font-weight: bold;
+  margin-bottom: 0.3rem;
+}
+
+input, select {
+  padding: 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+button {
+  padding: 0.6rem 1rem;
+  background: #0077cc;
+  color: white;
+  font-size: 0.95rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+button:hover {
+  background: #005fa3;
+}
+
+/* Table styling */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  margin-bottom: 1.5rem;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+thead {
+  background: #0077cc;
+  color: white;
+}
+thead th {
+  text-align: left;
+  padding: 0.8rem;
+}
+
+tbody td {
+  padding: 0.8rem;
+  border-top: 1px solid #ddd;
+}
+
+tbody tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+/* Delete button in table */
+td form button {
+  background: #e74c3c;
+}
+td form button:hover {
+  background: #c0392b;
+}
+
+/* Back link */
+p a {
+  display: inline-block;
+  margin-top: 1rem;
+  font-size: 0.95rem;
+}
+
+/* Flex container for form + table */
+.group-page {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+/* Make sure form and table share space nicely */
+.group-page form.card {
+  flex: 1;
+  max-width: 280px; /* keep the form narrow */
+}
+
+.group-page table {
+  flex: 3; /* let the table take more space */
+}
