@@ -71,7 +71,7 @@ class GroupMember(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id", ondelete="CASCADE"), nullable=False)
-    id_number = db.Column(db.String(64), db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    id_number = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     joined_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
