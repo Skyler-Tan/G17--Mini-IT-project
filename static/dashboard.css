@@ -88,11 +88,6 @@ body {
   box-shadow: 0 12px 24px rgba(0,0,0,0.15);
 }
 
-<<<<<<< HEAD
-/* Icon inside card (optional) */
-.card::before {
-  content: "📌"; /* You can swap with emoji or icon font */
-=======
 /* Section-specific emoji icons */
 .card-subject::before {
   content: "📘";
@@ -108,7 +103,6 @@ body {
 
 .card-settings::before {
   content: "⚙️";
->>>>>>> origin/database-link
   font-size: 40px;
   margin-bottom: 15px;
 }
@@ -139,11 +133,7 @@ body {
 }
 
 .section {
-<<<<<<< HEAD
-  margin-bottom: 60px;  /* adds spacing between sections */
-=======
   margin-bottom: 60px;
->>>>>>> origin/database-link
 }
 
 .section h2 {
@@ -151,10 +141,6 @@ body {
   font-size: 26px;
   margin-bottom: 25px;
   color: #222;
-<<<<<<< HEAD
-}
-=======
 }
 
 
->>>>>>> origin/database-link

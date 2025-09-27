@@ -1,8 +1,6 @@
 import logging
 from logging.config import fileConfig
-
 from flask import current_app
-
 from alembic import context
 
 # this is the Alembic Config object, which provides
@@ -51,6 +49,13 @@ def get_metadata():
     return target_db.metadata
 
 
+def include_object(object, name, type_, reflected, compare_to):
+    """Control which tables/objects Alembic manages.
+    Return True to include the object. Customize to exclude unmanaged tables/views.
+    """
+    return True
+
+
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
 
@@ -65,7 +70,13 @@ def run_migrations_offline():
     """
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url, target_metadata=get_metadata(), literal_binds=True
+        url=url,
+        target_metadata=get_metadata(),
+        literal_binds=True,
+        compare_type=True,
+        compare_server_default=True,
+        render_as_batch=True,
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -90,13 +101,21 @@ def run_migrations_online():
                 directives[:] = []
                 logger.info('No changes in schema detected.')
 
-    conf_args = current_app.extensions['migrate'].configure_args
+    conf_args = current_app.extensions['migrate'].configure_args.copy()
     if conf_args.get("process_revision_directives") is None:
         conf_args["process_revision_directives"] = process_revision_directives
 
     connectable = get_engine()
 
     with connectable.connect() as connection:
+        is_sqlite = connection.dialect.name == "sqlite"
+        # set defaults only if not already supplied by Flask-Migrate
+        conf_args.setdefault("compare_type", True)
+        conf_args.setdefault("compare_server_default", True)
+        if "render_as_batch" not in conf_args:
+            conf_args["render_as_batch"] = is_sqlite
+        conf_args.setdefault("include_object", include_object)
+
         context.configure(
             connection=connection,
             target_metadata=get_metadata(),

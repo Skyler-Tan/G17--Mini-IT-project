@@ -106,29 +106,21 @@ class SelfAssessment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id", ondelete="CASCADE"), nullable=True)
 
-<<<<<<< HEAD
     summary = db.Column(db.Text, nullable=False)
     challenges = db.Column(db.Text, nullable=False)
     different = db.Column(db.Text, nullable=False)
     role = db.Column(db.Text, nullable=False)
     feedback = db.Column(db.Text, nullable=True)
 
-=======
-    score = db.Column(db.Integer, db.CheckConstraint("score BETWEEN 1 AND 5", name="ck_self_score_range"), nullable=False)
-    comment = db.Column(db.Text, nullable=True)
->>>>>>> origin/database-link
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship("User", backref="self_assessments")
     group = db.relationship("Group", backref="self_assessments")
 
     def __repr__(self):
-<<<<<<< HEAD
         return f"<SelfAssessment id={self.id} user_id={self.user_id}>"
 
     def __repr__(self):
-=======
->>>>>>> origin/database-link
         return f"<SelfAssessment id={self.id} user_id={self.user_id} score={self.score}>"
 
 class AnonymousReview(db.Model):
@@ -137,29 +129,15 @@ class AnonymousReview(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     reviewee_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id", ondelete="CASCADE"), nullable=True)
-<<<<<<< HEAD
-
-=======
-    peer_review_id = db.Column(db.Integer, db.ForeignKey("peer_reviews.id", ondelete="SET NULL"), nullable=True)
-
-    score = db.Column(db.Integer, db.CheckConstraint("score BETWEEN 1 AND 5", name="ck_anon_score_range"), nullable=False)
->>>>>>> origin/database-link
     comment = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     reviewee = db.relationship("User", backref="anonymous_reviews")
     group = db.relationship("Group", backref="anonymous_reviews")
-<<<<<<< HEAD
 
     def __repr__(self):
         return f"<AnonymousReview id={self.id} reviewee_id={self.reviewee_id}>"
 
-=======
-    peer_review = db.relationship("PeerReview", backref="anonymous_feedback")
-
-    def __repr__(self):
-        return f"<AnonymousReview id={self.id} reviewee_id={self.reviewee_id} score={self.score}>"
->>>>>>> origin/database-link
 
 # ---------------- SETTINGS (per subject) ---------------- #
 class Setting(db.Model):

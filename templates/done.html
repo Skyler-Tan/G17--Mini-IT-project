@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 
-<<<<<<< HEAD
 {% block title %}My Profile-Peer Review App{% endblock %}
 
 {% block extra_css %}
@@ -16,15 +15,6 @@
 </header>
 
 
-=======
-{% block title %}Dashboard - Peer Review App{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
-{% endblock %}
-
-{% block content %}
->>>>>>> origin/database-link
 <div style="display: flex; justify-content: center; align-items: center; min-height: 60vh; text-align: center;">
     <div style="max-width: 500px; padding: 40px;">
         <!-- Success Animation -->
@@ -87,13 +77,6 @@
                style="color: #6c757d; text-decoration: none; font-size: 14px; margin-right: 15px;">
                 ✏️ Edit My Reviews
             </a>
-<<<<<<< HEAD
-=======
-            <a href="{{ url_for('index') }}" 
-               style="color: #6c757d; text-decoration: none; font-size: 14px;">
-                🔄 Start New Review
-            </a>
->>>>>>> origin/database-link
         </div>
         
         <!-- Motivational Message -->

@@ -18,29 +18,17 @@
   <h2>Welcome, {{ prefix }} {{ user.first_name }}!</h2>
 
   {% if user.role == "lecturer" %}
-<<<<<<< HEAD
-  <!-- Subjects Section -->
-=======
->>>>>>> origin/database-link
   <div class="section">
     <h2>Subjects</h2>
     <div class="cards">
       {% for subject in subjects %}
-<<<<<<< HEAD
-      <div class="card">
-=======
       <div class="card card-subject">
->>>>>>> origin/database-link
         <h3>{{ subject.name }}</h3>
         <br>
         <p><a href="{{ url_for('manage_groups', subject_id=subject.id) }}">Assign Groups</a></p>
         <br>
-<<<<<<< HEAD
-        <p><a href="{{ url_for('results', subject_id=subject.id) }}">View result</a></p>
-=======
         <br>
-        <p><a href="{{ url_for('view_groups', subject_id=subject.id) }}">View Groups</a></p>
->>>>>>> origin/database-link
+        <p><a href="{{ url_for('results', subject_id=subject.id) }}">View results</a></p>
       </div>
       {% else %}
       <p>No subjects created yet.</p>
@@ -48,16 +36,6 @@
     </div>
   </div>
 
-<<<<<<< HEAD
-  <!-- Lecturer Tools Section -->
-  <div class="section">
-    <h2>Lecturer Tools</h2>
-    <div class="cards">
-      <div class="card">
-        <a href="{{ url_for('list_subjects') }}">Create New Subject</a>
-      </div>
-      <div class="card">
-=======
 
   <div class="section">
     <h2>Lecturer Tools</h2>
@@ -66,7 +44,6 @@
         <a href="{{ url_for('list_subjects') }}">Create New Subject</a>
       </div>
       <div class="card card-tools">
->>>>>>> origin/database-link
         <a href="{{ url_for('manage_students') }}">Manage Students</a>
       </div>
     </div>
@@ -74,19 +51,11 @@
   {% endif %}
 
   {% if user.role == "student" %}
-<<<<<<< HEAD
-  <!-- Student Subjects Section -->
-=======
->>>>>>> origin/database-link
   <div class="section">
     <h2>Subjects</h2>
     <div class="cards">
       {% for subject in assigned_subjects %}
-<<<<<<< HEAD
-      <div class="card">
-=======
       <div class="card card-subject">
->>>>>>> origin/database-link
         <h3>{{ subject.name }}</h3>
         <p><a href="{{ url_for('start_peer_review', subject_id=subject.id) }}">Start Peer Review</a></p>
       </div>
@@ -97,19 +66,6 @@
   </div>
   {% endif %}
 
-<<<<<<< HEAD
-  <!-- Settings Section -->
-  <div class="section">
-    <h2>Settings</h2>
-    <div class="cards">
-      <div class="card">
-        <a href="{{ url_for('profile') }}">My Profile</a>
-      </div>
-      <div class="card">
-        <a href="{{ url_for('change_password') }}">Change Password</a>
-      </div>
-      <div class="card">
-=======
   
   <div class="section">
     <h2>Settings</h2>
@@ -121,15 +77,9 @@
         <a href="{{ url_for('change_password') }}">Change Password</a>
       </div>
       <div class="card card-settings">
->>>>>>> origin/database-link
         <a href="{{ url_for('logout') }}">Logout</a>
       </div>
     </div>
   </div>
 </main>
-<<<<<<< HEAD
 {% endblock %}
-=======
-{% endblock %}
-
->>>>>>> origin/database-link
