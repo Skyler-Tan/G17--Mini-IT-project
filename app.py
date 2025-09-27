@@ -707,7 +707,6 @@ def form():
             scores = request.form.getlist("score[]")
             comments = request.form.getlist("comment[]")
             anon_text = request.form.get("anonymous_review", "").strip()
-            anon_score = request.form.get("anonymous_score", "").strip()
 
             if not (len(reviewee_ids) == len(scores) == len(comments)):
                 flash("Mismatch in submitted review data.", "error")
@@ -750,20 +749,14 @@ def form():
                 db.session.add(review)
 
             # Save anonymous review if given
-            if anon_text and anon_score:
-                try:
-                    anon_score_val = int(anon_score)
-                except ValueError:
-                    anon_score_val = 0
-                if 1 <= anon_score_val <= 5:
-                    anon = AnonymousReview(
-                        reviewee_id=current_user_id,
-                        group_id=group_id,
-                        score=anon_score_val,
-                        comment=anon_text
-                    )
-                    db.session.add(anon)
-
+            if anon_text:
+                anon = AnonymousReview(
+                    reviewee_id=current_user_id,
+                    group_id=group_id,
+                    comment=anon_text
+                )
+                db.session.add(anon)
+                
             db.session.commit()
             flash("Peer reviews submitted successfully.", "success")
             return redirect(url_for("self_assessment", group_id=group_id, subject_id=subject_id))

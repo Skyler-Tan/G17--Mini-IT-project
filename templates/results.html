@@ -5,8 +5,23 @@
 {% block content %}
 <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
     <h2 style="text-align: center;">Peer Review Results</h2>
+
+    <!-- Subject + Group toggle -->
     <div style="background: #e8f4fd; border: 1px solid #b3d9ff; border-radius: 8px; padding: 10px; margin: 10px 0; text-align: center;">
-        <strong>Subject:</strong> {{ subject.name }} | <strong>Group:</strong> {{ group.name }}
+        <strong>Subject:</strong> {{ subject.name }} | 
+        <strong>Group:</strong>
+        {% if current_user.role == "lecturer" %}
+            <form method="get" action="{{ url_for('results') }}" style="display:inline;">
+                <select name="group_id" onchange="this.form.submit()" style="padding:4px; border-radius:6px;">
+                    {% for g in subject.groups %}
+                        <option value="{{ g.id }}" {% if g.id == group.id %}selected{% endif %}>{{ g.name }}</option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" name="subject_id" value="{{ subject.id }}">
+            </form>
+        {% else %}
+            {{ group.name }}
+        {% endif %}
     </div>
 
     <!-- Group Summary -->
@@ -96,112 +111,73 @@
         {% endif %}
     </div>
 
-<!-- Self Assessments — styled, lecturer sees student names; owner sees "You:" -->
-<div>
-    <h3>Self Assessments</h3>
+    <!-- Self Assessments -->
+    <div>
+        <h3>Self Assessments</h3>
 
-    {% if not self_assessments %}
-        <em style="color: #999;">No self-assessments submitted.</em>
-    {% endif %}
-
-    {% for assessment_data in self_assessments %}
-        {% set assessment = assessment_data.assessment %}
-        {% set student_name = assessment_data.student_name %}
-        {% set student_id = assessment_data.student_id if assessment_data.student_id is defined else None %}
-
-        {# Show to lecturer or owner student #}
-        {% if current_user.role == "lecturer" or (student_id and current_user.id == student_id) %}
-
-            {# determine label shown before the answer: full name for lecturers, "You" for owner student #}
-            {% if current_user.role == "lecturer" %}
-                {% set label_name = student_name %}
-            {% elif student_id and current_user.id == student_id %}
-                {% set label_name = "You" %}
-            {% else %}
-                {% set label_name = student_name %}
-            {% endif %}
-
-            <div style="padding: 14px; background: #f8f9fa; border-left: 4px solid #ffc107; margin-bottom: 14px; border-radius: 8px;">
+        {% if not self_assessments %}
+            <em style="color: #999;">No self-assessments submitted.</em>
+        {% else %}
+            <div style="padding:14px; background:#f8f9fa; border-left:4px solid #ffc107; border-radius:8px; margin-bottom:14px;">
 
                 <!-- Q1 -->
-                <div style="margin-bottom:10px;">
+                <div style="margin-bottom:14px;">
                     <div style="font-weight:700; margin-bottom:6px;">1. Brief summary of your contribution</div>
-                    <div style="background:#fff; border:1px solid #e6e9ee; padding:10px; border-radius:6px; white-space:pre-wrap;">
-                        <div><strong>{{ label_name }}:</strong></div>
-                        <div>
-                            {% if assessment.summary %}
-                                {{ assessment.summary }}
-                            {% else %}
-                                <em style="color:#999;"> No answer</em>
-                            {% endif %}
+                    {% for data in self_assessments %}
+                        <div style="background:#fff; border:1px solid #e6e9ee; padding:8px; border-radius:6px; margin-bottom:6px; display:flex; gap:6px;">
+                            <strong>{{ data.student_name }}:</strong>
+                            <span>{% if data.assessment.summary %}{{ data.assessment.summary }}{% else %}<em style="color:#999;">No answer</em>{% endif %}</span>
                         </div>
-                    </div>
+                    {% endfor %}
                 </div>
 
                 <!-- Q2 -->
-                <div style="margin-bottom:10px;">
+                <div style="margin-bottom:14px;">
                     <div style="font-weight:700; margin-bottom:6px;">2. What challenges did you face & what did you learn?</div>
-                    <div style="background:#fff; border:1px solid #e6e9ee; padding:10px; border-radius:6px; white-space:pre-wrap;">
-                        <div><strong>{{ label_name }}:</strong></div>
-                        <div>
-                            {% if assessment.challenges %}
-                                {{ assessment.challenges }}
-                            {% else %}
-                                <em style="color:#999;"> No answer</em>
-                            {% endif %}
+                    {% for data in self_assessments %}
+                        <div style="background:#fff; border:1px solid #e6e9ee; padding:8px; border-radius:6px; margin-bottom:6px; display:flex; gap:6px;">
+                            <strong>{{ data.student_name }}:</strong>
+                            <span>{% if data.assessment.challenges %}{{ data.assessment.challenges }}{% else %}<em style="color:#999;">No answer</em>{% endif %}</span>
                         </div>
-                    </div>
+                    {% endfor %}
                 </div>
 
                 <!-- Q3 -->
-                <div style="margin-bottom:10px;">
+                <div style="margin-bottom:14px;">
                     <div style="font-weight:700; margin-bottom:6px;">3. What would you do differently?</div>
-                    <div style="background:#fff; border:1px solid #e6e9ee; padding:10px; border-radius:6px; white-space:pre-wrap;">
-                        <div><strong>{{ label_name }}:</strong></div>
-                        <div>
-                            {% if assessment.different %}
-                                {{ assessment.different }}
-                            {% else %}
-                                <em style="color:#999;"> No answer</em>
-                            {% endif %}
+                    {% for data in self_assessments %}
+                        <div style="background:#fff; border:1px solid #e6e9ee; padding:8px; border-radius:6px; margin-bottom:6px; display:flex; gap:6px;">
+                            <strong>{{ data.student_name }}:</strong>
+                            <span>{% if data.assessment.different %}{{ data.assessment.different }}{% else %}<em style="color:#999;">No answer</em>{% endif %}</span>
                         </div>
-                    </div>
+                    {% endfor %}
                 </div>
 
                 <!-- Q4 -->
-                <div style="margin-bottom:10px;">
+                <div style="margin-bottom:14px;">
                     <div style="font-weight:700; margin-bottom:6px;">4. Describe your role and how it helped the team</div>
-                    <div style="background:#fff; border:1px solid #e6e9ee; padding:10px; border-radius:6px; white-space:pre-wrap;">
-                        <div><strong>{{ label_name }}:</strong></div>
-                        <div>
-                            {% if assessment.role %}
-                                {{ assessment.role }}
-                            {% else %}
-                                <em style="color:#999;"> No answer</em>
-                            {% endif %}
+                    {% for data in self_assessments %}
+                        <div style="background:#fff; border:1px solid #e6e9ee; padding:8px; border-radius:6px; margin-bottom:6px; display:flex; gap:6px;">
+                            <strong>{{ data.student_name }}:</strong>
+                            <span>{% if data.assessment.role %}{{ data.assessment.role }}{% else %}<em style="color:#999;">No answer</em>{% endif %}</span>
                         </div>
-                    </div>
+                    {% endfor %}
                 </div>
 
                 <!-- Q5 -->
                 <div>
                     <div style="font-weight:700; margin-bottom:6px;">5. Additional feedback (optional)</div>
-                    <div style="background:#fff; border:1px solid #e6e9ee; padding:10px; border-radius:6px; white-space:pre-wrap;">
-                        <div><strong>{{ label_name }}:</strong></div>
-                        <div>
-                            {% if assessment.feedback %}
-                                {{ assessment.feedback }}
-                            {% else %}
-                                <em style="color:#999;"> No answer</em>
-                            {% endif %}
+                    {% for data in self_assessments %}
+                        <div style="background:#fff; border:1px solid #e6e9ee; padding:8px; border-radius:6px; margin-bottom:6px; display:flex; gap:6px;">
+                            <strong>{{ data.student_name }}:</strong>
+                            <span>{% if data.assessment.feedback %}{{ data.assessment.feedback }}{% else %}<em style="color:#999;">No answer</em>{% endif %}</span>
                         </div>
-                    </div>
+                    {% endfor %}
                 </div>
 
             </div>
         {% endif %}
-    {% endfor %}
-</div>
+    </div>
 
 </div>
 {% endblock %}
