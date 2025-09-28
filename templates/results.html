@@ -120,7 +120,7 @@
         {% else %}
             <div style="padding:14px; background:#f8f9fa; border-left:4px solid #ffc107; border-radius:8px; margin-bottom:14px;">
 
-                <!-- Q1 -->
+                <!-- Loop through each question once -->
                 <div style="margin-bottom:14px;">
                     <div style="font-weight:700; margin-bottom:6px;">1. Brief summary of your contribution</div>
                     {% for data in self_assessments %}
@@ -131,7 +131,6 @@
                     {% endfor %}
                 </div>
 
-                <!-- Q2 -->
                 <div style="margin-bottom:14px;">
                     <div style="font-weight:700; margin-bottom:6px;">2. What challenges did you face & what did you learn?</div>
                     {% for data in self_assessments %}
@@ -142,7 +141,6 @@
                     {% endfor %}
                 </div>
 
-                <!-- Q3 -->
                 <div style="margin-bottom:14px;">
                     <div style="font-weight:700; margin-bottom:6px;">3. What would you do differently?</div>
                     {% for data in self_assessments %}
@@ -153,7 +151,6 @@
                     {% endfor %}
                 </div>
 
-                <!-- Q4 -->
                 <div style="margin-bottom:14px;">
                     <div style="font-weight:700; margin-bottom:6px;">4. Describe your role and how it helped the team</div>
                     {% for data in self_assessments %}
@@ -164,7 +161,6 @@
                     {% endfor %}
                 </div>
 
-                <!-- Q5 -->
                 <div>
                     <div style="font-weight:700; margin-bottom:6px;">5. Additional feedback (optional)</div>
                     {% for data in self_assessments %}
@@ -178,6 +174,5 @@
             </div>
         {% endif %}
     </div>
-
 </div>
 {% endblock %}

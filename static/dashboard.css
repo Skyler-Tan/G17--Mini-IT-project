@@ -115,6 +115,13 @@ body {
   font-weight: bold;
 }
 
+.card h1 {
+  margin-bottom: 12px;
+  color: #003366;
+  font-size: 19px;
+  font-weight: medium;
+}
+
 /* Link styled as button */
 .card a {
   margin-top: auto;

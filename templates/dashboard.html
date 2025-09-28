@@ -52,19 +52,24 @@
 
   {% if user.role == "student" %}
   <div class="section">
-    <h2>Subjects</h2>
+    <h2>My Subjects & Groups</h2>
     <div class="cards">
-      {% for subject in assigned_subjects %}
+      {% for group in assigned_groups %}
       <div class="card card-subject">
-        <h3>{{ subject.name }}</h3>
-        <p><a href="{{ url_for('start_peer_review', subject_id=subject.id) }}">Start Peer Review</a></p>
+        <h3>{{ group.subject.name }}</h3>
+        <h1>{{ group.name }}</h1>
+        <p>
+          <a href="{{ url_for('start_peer_review', subject_id=group.subject.id, group_id=group.id) }}">
+            Start Peer Review
+          </a>
+        </p>
       </div>
       {% else %}
       <p>No subjects assigned yet.</p>
       {% endfor %}
     </div>
   </div>
-  {% endif %}
+{% endif %}
 
   
   <div class="section">

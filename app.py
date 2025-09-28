@@ -473,20 +473,6 @@ def login():
 
         user = User.query.filter_by(username=username).first()
 
-<<<<<<< HEAD
-        if user and check_password_hash(user.password, password):
-            if user.role != selected_role:
-                flash("Invalid credentials. Try again.", "danger")
-                return redirect(url_for("login"))
-
-            
-            login_user(user)
-            flash("Login successful!", "success")
-            return redirect(url_for("dashboard"))
-
-        
-        flash("Invalid credentials. Try again.", "danger")
-=======
         if user:
             if user.role == selected_role and check_password_hash(user.password, password):
                 login_user(user)
@@ -502,7 +488,6 @@ def login():
         else:
             flash("Username not found. Please register or check your input.", "danger")
             logging.warning(f"Failed login attempt for unknown user {username} at {datetime.now()}")
->>>>>>> origin/test-add
 
     return render_template("login.html")
 
@@ -513,14 +498,12 @@ def login():
 @login_required
 def dashboard():
     if current_user.role == "student":
-        subjects = Subject.query.order_by(Subject.name).all()
-        assigned_subjects = get_assigned_subjects(current_user.id)
-        return render_template (
+        assigned_groups = get_assigned_groups(current_user.id)
+        return render_template(
             'dashboard.html',
             user=current_user,
             current_year=datetime.now().year,
-            subjects=subjects,
-            assigned_subjects=assigned_subjects
+            assigned_groups=assigned_groups
         )
 
     elif current_user.role == "lecturer":
@@ -533,7 +516,6 @@ def dashboard():
             current_year=datetime.now().year,
             subjects=subjects
         )
-
     else:
         flash("Role is not recognized", "danger")
         return redirect(url_for("logout"))
@@ -585,17 +567,14 @@ def lecturer_profile():
     return render_template("lecturer_profile.html", user=current_user)
 
 
-def get_assigned_subjects(student_id):
-    group_ids = db.session.query(GroupMember.group_id).filter_by(id_number=student_id).subquery()
-
-    subjects = (
-        db.session.query(Subject)
-        .join(Group, Subject.id == Group.subject_id)
-        .filter(Group.id.in_(group_ids))
-        .distinct()
+def get_assigned_groups(student_id):
+    return (
+        db.session.query(Group)
+        .join(Subject, Subject.id == Group.subject_id)
+        .join(GroupMember, GroupMember.group_id == Group.id)
+        .filter(GroupMember.id_number == student_id)
         .all()
     )
-
     return subjects
 
 
@@ -630,89 +609,86 @@ def is_lecturer(username):
 @app.route("/start_peer_review")
 @login_required
 def start_peer_review():
-    """Clear session and start fresh peer review"""
-    if current_user.role != "student":
-        flash("This page is for students only.", "error")
-        return redirect(url_for('dashboard'))
-    
-    # Get group and subject from query parameters or user's default
-    group_id = request.args.get('group_id')
-    subject_id = request.args.get('subject_id')
-    
-    if not group_id or not subject_id:
-        # Get user's groups from GroupMember
-        user_groups = GroupMember.query.filter_by(id_number=current_user.id).all()
-        if user_groups:
-            group_id = user_groups[0].group_id
-            group = Group.query.get(group_id)
-            if group and group.subject_id:
-                subject_id = group.subject_id
-    
-    # Clear any existing session data
-    session.pop("current_user_id", None)
-    session.pop("current_group_id", None)
-    session.pop("current_subject_id", None)
-    
-    if group_id and subject_id:
-        return redirect(url_for('peer_review', group_id=group_id, subject_id=subject_id))
-    else:
-        flash("Please select a group and subject first.", "error")
-        return redirect(url_for('dashboard'))
+    """Entry point: sets group & subject then redirects to peer_review page."""
+
+    group_id = request.args.get("group_id", type=int)
+    subject_id = request.args.get("subject_id", type=int)
+
+    # Students → fall back to their own group if missing
+    if current_user.role == "student":
+        if not group_id or not subject_id:
+            user_groups = GroupMember.query.filter_by(id_number=current_user.id).all()
+            if user_groups:
+                group_id = group_id or user_groups[0].group_id
+                group = Group.query.get(group_id)
+                if group and group.subject_id:
+                    subject_id = subject_id or group.subject_id
+
+    # Lecturers must be given group_id + subject_id in the link
+    if current_user.role == "lecturer" and (not group_id or not subject_id):
+        flash("Please select a subject and group to view.", "error")
+        return redirect(url_for("dashboard"))
+
+    # Save to session
+    if group_id:
+        session["current_group_id"] = group_id
+    if subject_id:
+        session["current_subject_id"] = subject_id
+    session["current_user_id"] = current_user.id
+
+    return redirect(url_for("peer_review", group_id=group_id, subject_id=subject_id))
+
 
 @app.route("/peer_review")
 @login_required
 def peer_review():
-    if current_user.role != "student":
-        flash("This page is for students only.", "error")
-        return redirect(url_for('dashboard'))
-    
-    # Get group and subject from query parameters
-    group_id = request.args.get('group_id')
-    subject_id = request.args.get('subject_id')
-    
+    """Peer review page."""
+
+    # Query string first, then session
+    group_id = request.args.get("group_id", type=int) or session.get("current_group_id")
+    subject_id = request.args.get("subject_id", type=int) or session.get("current_subject_id")
+
     if not group_id or not subject_id:
-        flash("Please select a group and subject.", "error")
-        return redirect(url_for('dashboard'))
+        flash("Please select a group and subject first.", "error")
+        return redirect(url_for("dashboard"))
 
-    # Store in session
-    session['current_group_id'] = group_id
-    session['current_subject_id'] = subject_id
-    session['current_user_id'] = current_user.id
+    # Ensure session stays updated
+    session["current_group_id"] = group_id
+    session["current_subject_id"] = subject_id
+    session["current_user_id"] = current_user.id
 
-    # Fetch students in this group with a join (no helper)
-    group_students = (
-        db.session.query(User)
-        .join(GroupMember, GroupMember.id_number == User.id)  # NOTE: id_number points to users.id
-        .filter(GroupMember.group_id == group_id, User.role == "student")
-        .all()
-    )
+    # Get group and subject
+    group = Group.query.get_or_404(group_id)
+    subject = Subject.query.get_or_404(subject_id)
 
-    students = [{"id": s.id, "full_name": f"{s.first_name} {s.last_name}"} for s in group_students]
+    # Fetch students in group
+    group_students = get_students_in_group(group_id)
+
+    # Flag if peer review possible
+    can_review = len(group_students) >= 2
 
     # Completion status
     completion_status = get_completion_status(group_students, group_id)
-    completed_count = sum(1 for v in completion_status.values() if v['completed'])
-    total_students = len(students)
-    all_completed = all(v['completed'] for v in completion_status.values())
+    completed_count = sum(1 for v in completion_status.values() if v["completed"])
+    total_students = len(group_students)
+    all_completed = all(v["completed"] for v in completion_status.values()) if group_students else False
 
-    # Compute peer averages only when all students are done
+    # Results (only avg score once everyone is done)
     results = []
     if all_completed:
         for student in group_students:
-            reviews = PeerReview.query.filter_by(reviewee_id=student.id, group_id=group_id).all()
-            avg_peer_score = (sum(r.score for r in reviews) / len(reviews)) if reviews else 0
-            results.append({
-                'student_name': f"{student.first_name} {student.last_name}",
-                'avg_score': round(avg_peer_score, 2)
-            })
-
-    # Group and subject info
-    group = Group.query.get(group_id)
-    subject = Subject.query.get(subject_id)
+            reviews = PeerReview.query.filter_by(
+                reviewee_id=student.id, group_id=group_id
+            ).all()
+            if reviews:
+                avg_peer_score = sum(r.score for r in reviews) / len(reviews)
+                results.append({
+                    "student_name": f"{student.first_name} {student.last_name}",
+                    "avg_score": round(avg_peer_score, 2)
+                })
 
     return render_template(
         "peer_review.html",
-        students=students,
         group_students=group_students,
         completion_status=completion_status,
         completed_count=completed_count,
@@ -720,7 +696,8 @@ def peer_review():
         all_completed=all_completed,
         results=results,
         group=group,
-        subject=subject
+        subject=subject,
+        can_review=can_review  # 🔑 pass to template
     )
 
 
@@ -760,23 +737,27 @@ def form():
     if current_user.role != "student":
         flash("This page is for students only.", "error")
         return redirect(url_for('dashboard'))
-    
-    group_id = request.args.get('group_id') or session.get('current_group_id')
-    subject_id = request.args.get('subject_id') or session.get('current_subject_id')
+
+    group_id = request.args.get("group_id")
+    subject_id = request.args.get("subject_id")
     if not group_id or not subject_id:
         flash("Please select a group and subject first.", "error")
         return redirect(url_for('dashboard'))
-    
+
+    # Always update session
+    session["current_group_id"] = int(group_id)
+    session["current_subject_id"] = int(subject_id)
+
     current_user_id = session.get("current_user_id")
     if not current_user_id:
         flash("Please select yourself from the peer review page first.", "info")
         return redirect(url_for("peer_review", group_id=group_id, subject_id=subject_id))
-    
+
     current_user_obj = User.query.get(current_user_id)
     if not current_user_obj:
         flash("Invalid user session.", "error")
         return redirect(url_for("peer_review", group_id=group_id, subject_id=subject_id))
-    
+
     group_students = get_students_in_group(group_id)
     students_list = [{"id": s.id, "full_name": f"{s.first_name} {s.last_name}"} for s in group_students]
 
@@ -835,7 +816,7 @@ def form():
                     comment=anon_text
                 )
                 db.session.add(anon)
-                
+
             db.session.commit()
             flash("Peer reviews submitted successfully.", "success")
             return redirect(url_for("self_assessment", group_id=group_id, subject_id=subject_id))
@@ -853,16 +834,17 @@ def form():
 
     group = Group.query.get(group_id)
     subject = Subject.query.get(subject_id)
-    
+
     return render_template(
-        "form.html", 
+        "form.html",
         current_user=current_user_obj,
         current_user_id=current_user_id,
-        prior_reviews=prior_reviews, 
+        prior_reviews=prior_reviews,
         students=students_list,
         group=group,
         subject=subject
     )
+
 
 
 @app.route("/self_assessment/<int:group_id>/<int:subject_id>", methods=["GET", "POST"])
@@ -924,57 +906,50 @@ def self_assessment(group_id, subject_id):
 @app.route("/results")
 @login_required
 def results():
-    """Results page"""
-    group_id = request.args.get("group_id") or session.get("current_group_id")
-    subject_id = request.args.get("subject_id") or session.get("current_subject_id")
+    subject_id = request.args.get("subject_id", type=int)
+    group_id = request.args.get("group_id", type=int)
 
-    if not group_id or not subject_id:
-        flash("Please select a group and subject first.", "error")
+    if not subject_id:
+        flash("Please select a subject first.", "error")
         return redirect(url_for("dashboard"))
 
-    session["current_group_id"] = group_id
-    session["current_subject_id"] = subject_id
+    subject = Subject.query.get_or_404(subject_id)
 
+    # If no group_id, pick the first group in this subject
+    if not group_id and subject.groups:
+        group_id = subject.groups[0].id
+
+    if not group_id:
+        flash("No groups available for this subject yet.", "info")
+        return redirect(url_for("dashboard"))
+
+    group = Group.query.get_or_404(group_id)
     group_students = get_students_in_group(group_id)
 
     # Completion tracking
     status = get_completion_status(group_students, group_id)
-    all_completed = all(v["completed"] for v in status.values())
+    all_completed = all(v["completed"] for v in status.values()) if status else False
     completed_count = sum(1 for v in status.values() if v["completed"])
 
-    current_user_id = session.get("current_user_id") or current_user.id
-    is_current_lecturer = current_user.role == "lecturer"
-
     results = {}
-
     for student_obj in group_students:
         reviews = PeerReview.query.filter_by(
             reviewee_id=student_obj.id, group_id=group_id
         ).all()
 
-        # Avg / Final mark only when everyone finished
+        avg_peer_score = final_mark = None
         if all_completed and reviews:
             avg_peer_score = sum(r.score for r in reviews) / len(reviews)
             final_mark = round(avg_peer_score * 20, 2)
-        else:
-            avg_peer_score = None
-            final_mark = None
 
-        peer_comments = []
-        for review in reviews:
-            if review.comment and review.comment.strip():
-                reviewer_name = (
-                    f"{review.reviewer_user.first_name} {review.reviewer_user.last_name}"
-                    if review.reviewer_user
-                    else "Unknown"
-                )
-                peer_comments.append(
-                    {
-                        "reviewer_id": review.reviewer_id,
-                        "reviewer": reviewer_name,
-                        "comment": review.comment.strip(),
-                    }
-                )
+        peer_comments = [
+            {
+                "reviewer_id": r.reviewer_id,
+                "reviewer": f"{r.reviewer_user.first_name} {r.reviewer_user.last_name}" if r.reviewer_user else "Unknown",
+                "comment": r.comment.strip(),
+            }
+            for r in reviews if r.comment and r.comment.strip()
+        ]
 
         results[student_obj.id] = {
             "avg_score": avg_peer_score,
@@ -982,40 +957,34 @@ def results():
             "comments": peer_comments,
         }
 
-    # Anonymous reviews (just text, linked to group)
+    # Anonymous reviews
     anonymous_reviews = AnonymousReview.query.filter_by(group_id=group_id).all()
 
     # Self-assessments
-    self_assessments = []
-    for student_obj in group_students:
-        assessment = SelfAssessment.query.filter_by(
-            user_id=student_obj.id, group_id=group_id
-        ).first()
-        if assessment:
-            self_assessments.append(
-                {
-                    "student_id": student_obj.id,
-                    "student_name": f"{student_obj.first_name} {student_obj.last_name}",
-                    "assessment": assessment,
-                }
-            )
-
-    group = Group.query.get(group_id)
-    subject = Subject.query.get(subject_id)
+    self_assessments = [
+        {
+            "student_id": s.id,
+            "student_name": f"{s.first_name} {s.last_name}",
+            "assessment": SelfAssessment.query.filter_by(user_id=s.id, group_id=group_id).first(),
+        }
+        for s in group_students
+    ]
 
     return render_template(
         "results.html",
-        all_completed=all_completed,
-        completed_count=completed_count,
-        results=results,
-        current_user=current_user,
-        is_lecturer=is_current_lecturer,
-        anonymous_reviews=anonymous_reviews,
-        self_assessments=self_assessments,
-        group_students=group_students,
-        group=group,
         subject=subject,
+        group=group,
+        group_students=group_students,
+        completed_count=completed_count,
+        all_completed=all_completed,
+        results=results,
+        anonymous_reviews=anonymous_reviews,
+        self_assessments=[sa for sa in self_assessments if sa["assessment"]],
+        current_user=current_user,
+        is_lecturer=(current_user.role == "lecturer"),
     )
+
+
 
 @app.route("/done")
 @login_required  
