@@ -854,7 +854,6 @@ def self_assessment(group_id, subject_id):
     subject = Subject.query.get_or_404(subject_id)
 
     if request.method == "POST":
-        # Save/update self-assessment
         summary = request.form.get("summary")
         challenges = request.form.get("challenges")
         different = request.form.get("different")
@@ -887,7 +886,7 @@ def self_assessment(group_id, subject_id):
         db.session.commit()
         flash("Your self-assessment has been submitted successfully.", "success")
 
-        # 🔑 redirect to done page
+        # redirect to done page
         return redirect(url_for("done", group_id=group.id, subject_id=subject.id))
 
     # GET request → show the form
@@ -957,10 +956,8 @@ def results():
             "comments": peer_comments,
         }
 
-    # Anonymous reviews
     anonymous_reviews = AnonymousReview.query.filter_by(group_id=group_id).all()
 
-    # Self-assessments
     self_assessments = [
         {
             "student_id": s.id,
@@ -1010,7 +1007,6 @@ def get_students_in_group(group_id):
     """Get all students in a specific group"""
     try:
         group_members = GroupMember.query.filter_by(group_id=group_id).all()
-        # IMPORTANT: here id_number is actually a foreign key to users.id
         student_ids = [gm.id_number for gm in group_members]
         students = User.query.filter(User.id.in_(student_ids), User.role == 'student').all()
         return students
@@ -1022,9 +1018,8 @@ def get_completion_status(group_students, group_id):
     """Get completion status for students in a specific group"""
     status = {}
     for student_obj in group_students:
-        # Check if student has completed all reviews (reviewed all other students)
         total_students = len(group_students)
-        required_reviews = total_students - 1  # Review everyone except yourself
+        required_reviews = total_students - 1  
         
         completed_reviews = PeerReview.query.filter_by(
             reviewer_id=student_obj.id, 
